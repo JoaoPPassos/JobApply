@@ -1,6 +1,6 @@
 import { User } from '@domain/entities/User.entitie';
-import { IAuth } from '@domain/interfaces/IAuth.interface';
-import { IHashService } from '@domain/interfaces/IHashService.interface';
+import { IAuth } from '@domain/ports/IAuth.interface';
+import { IHashService } from '@domain/ports/IHashService.interface';
 
 export class CreateUserUseCase {
   constructor(

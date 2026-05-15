@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@domain/entities/User.entitie';
-import { IAuth } from '@domain/interfaces/IAuth.interface';
+import { IAuth } from '@domain/ports/IAuth.interface';
 import 'dotenv/config';
 
 @Injectable()
@@ -19,7 +19,9 @@ export class AuthRepository implements IAuth {
       return await this.jwtService.signAsync(data, {
         secret: process.env.HASH_TOKEN,
       });
-    } catch {}
+    } catch (error) {
+      console.error(error);
+    }
     return '';
   }
 
@@ -32,10 +34,14 @@ export class AuthRepository implements IAuth {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findOneBy({ email });
+    const user = await this.userRepository.findOneBy({ email });
+
+    return user;
   }
 
-  async findByID(id: string): Promise<User | null> {
-    return await this.userRepository.findOneByOrFail({ id });
+  async findByID(id: string): Promise<User> {
+    const user = await this.userRepository.findOneByOrFail({ id });
+
+    return user;
   }
 }
