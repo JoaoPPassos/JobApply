@@ -3,14 +3,17 @@ import { CreateUserUseCase } from '@domain/use-cases/auth/create-user.use-case';
 import { LoginUserUseCase } from '@domain/use-cases/auth/login-user.use-case';
 import { AuthRepository } from '@infrastructure/repositories/auth.repository';
 import { HashRepository } from '@infrastructure/repositories/hash.repository';
-import { IAuthLogin } from '@module/auth/types/AuthLogin.type';
+import { AuthLogin } from '@module/auth/types/AuthLogin.type';
 import { User } from '@domain/entities/User.entitie';
+import { SendMailUseCase } from '@domain/use-cases/mail/send-email.use-case';
+import { MailRepository } from '@infrastructure/repositories/mail.repository';
 
 @Injectable()
 export class AuthService {
   constructor(
     private authRepository: AuthRepository,
     private hashRepository: HashRepository,
+    private emailRepository: MailRepository,
   ) {}
 
   async signUp(data: {
@@ -18,15 +21,28 @@ export class AuthService {
     email: string;
     password: string;
   }): Promise<User> {
-    const useCase = new CreateUserUseCase(
+    const createUserUseCase = new CreateUserUseCase(
       this.authRepository,
       this.hashRepository,
     );
+    const sendEmailUserCase = new SendMailUseCase(this.emailRepository);
+    const user = await createUserUseCase.execute(data);
+    const confirmationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/auth/confirm?email=${encodeURIComponent(user.email)}`;
 
-    return useCase.execute(data);
+    await sendEmailUserCase.execute({
+      html: this.emailRepository.mapAccountConfirmationTemplate({
+        name: user.name,
+        confirmationUrl,
+        appName: process.env.APP_NAME || 'JobApply',
+      }),
+      subject: 'Your Account must be activated!',
+      to: user.email,
+    });
+
+    return user;
   }
 
-  async login(data: { email: string; password: string }): Promise<IAuthLogin> {
+  async login(data: { email: string; password: string }): Promise<AuthLogin> {
     const useCase = new LoginUserUseCase(
       this.authRepository,
       this.hashRepository,

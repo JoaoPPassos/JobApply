@@ -4,7 +4,7 @@ import { User } from '@domain/entities/User.entitie';
 import { AuthService } from '../services/auth.service';
 import { AuthenticateUserDTO } from '../dto/authenticate-user';
 import { SuccessResponse } from '@shared/response/success.response';
-import { IAuthLogin } from '@module/auth/types/AuthLogin.type';
+import { AuthLogin } from '@module/auth/types/AuthLogin.type';
 
 @Controller('auth')
 export class AuthController {
@@ -23,10 +23,10 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() body: AuthenticateUserDTO,
-  ): Promise<SuccessResponse<IAuthLogin>> {
+  ): Promise<SuccessResponse<AuthLogin>> {
     const response = await this.authService.login(body);
 
-    return new SuccessResponse<IAuthLogin>(
+    return new SuccessResponse<AuthLogin>(
       response,
       200,
       'User logged up successfully',

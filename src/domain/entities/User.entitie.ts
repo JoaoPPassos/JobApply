@@ -13,4 +13,7 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar' })
   @Exclude()
   password: string;
+
+  @Column({ type: 'boolean', default: false })
+  is_active: boolean;
 }
