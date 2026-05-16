@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from '@domain/entities/User.entitie';
 import { IAuth } from '@domain/ports/IAuth.interface';
 import 'dotenv/config';
+import { BadRequestException } from '@domain/errors/exceptions';
 
 @Injectable()
 export class AuthRepository implements IAuth {
@@ -41,6 +42,17 @@ export class AuthRepository implements IAuth {
 
   async findByID(id: string): Promise<User> {
     const user = await this.userRepository.findOneByOrFail({ id });
+
+    return user;
+  }
+
+  async activate(email: string): Promise<User> {
+    const user = await this.userRepository.findOneByOrFail({ email });
+
+    if (user.is_active) throw new BadRequestException();
+    user.is_active = true;
+
+    await this.userRepository.save(user);
 
     return user;
   }

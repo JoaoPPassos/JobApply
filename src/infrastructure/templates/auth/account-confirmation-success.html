@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conta confirmada</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef4ff;
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-border: rgba(15, 23, 42, 0.08);
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #2563eb;
+      --accent-strong: #1d4ed8;
+      --shadow: 0 24px 60px rgba(37, 99, 235, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.14), transparent 28%),
+        linear-gradient(135deg, #f8fbff 0%, var(--bg) 48%, #edf2ff 100%);
+    }
+
+    .card {
+      width: min(100%, 640px);
+      padding: 40px;
+      border: 1px solid var(--panel-border);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 42%);
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--accent-strong);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .check {
+      width: 22px;
+      height: 22px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    h1 {
+      margin: 20px 0 12px;
+      font-size: clamp(32px, 5vw, 52px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    p {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .highlight {
+      margin-top: 28px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(37, 99, 235, 0.12);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .actions {
+      margin-top: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+    }
+
+    .button.primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      box-shadow: 0 14px 30px rgba(37, 99, 235, 0.25);
+    }
+
+    .button.secondary {
+      color: var(--accent-strong);
+      background: rgba(37, 99, 235, 0.08);
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .footer {
+      margin-top: 26px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    @media (max-width: 640px) {
+      .card { padding: 28px 22px; border-radius: 24px; }
+      p { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <span class="badge"><span class="check">✓</span> Conta ativada</span>
+    <h1>Pronto, {{USER_NAME}}.</h1>
+    <p>Sua conta foi confirmada com sucesso e já está liberada para acesso no JobApply.</p>
+    <div class="highlight">Você pode fechar esta janela e voltar para a aplicação para fazer login normalmente.</div>
+    <div class="actions">
+      <a class="button primary" href="/auth/login">Ir para o login</a>
+      <a class="button secondary" href="/">Voltar para o início</a>
+    </div>
+    <div class="footer">Se algo parecer incorreto, tente acessar novamente ou entre em contato com o suporte.</div>
+  </main>
+</body>
+</html>

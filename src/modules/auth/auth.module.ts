@@ -7,6 +7,7 @@ import { User } from '@domain/entities/User.entitie';
 import { AuthRepository } from '@infrastructure/repositories/auth.repository';
 import { HashRepository } from '@infrastructure/repositories/hash.repository';
 import { MailRepository } from '@infrastructure/repositories/mail.repository';
+import { WorkerRepository } from '@infrastructure/repositories/worker.repository';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
@@ -15,6 +16,7 @@ import { MailRepository } from '@infrastructure/repositories/mail.repository';
     AuthRepository,
     HashRepository,
     MailRepository,
+    WorkerRepository,
     JwtService,
   ],
   controllers: [AuthController],

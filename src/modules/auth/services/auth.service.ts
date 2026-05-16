@@ -7,6 +7,8 @@ import { AuthLogin } from '@module/auth/types/AuthLogin.type';
 import { User } from '@domain/entities/User.entitie';
 import { SendMailUseCase } from '@domain/use-cases/mail/send-email.use-case';
 import { MailRepository } from '@infrastructure/repositories/mail.repository';
+import { WorkerRepository } from '@infrastructure/repositories/worker.repository';
+import { ActiveUserUseCase } from '@domain/use-cases/auth/active-user.use-case';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +16,7 @@ export class AuthService {
     private authRepository: AuthRepository,
     private hashRepository: HashRepository,
     private emailRepository: MailRepository,
+    private workerRepository: WorkerRepository,
   ) {}
 
   async signUp(data: {
@@ -29,14 +32,16 @@ export class AuthService {
     const user = await createUserUseCase.execute(data);
     const confirmationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/auth/confirm?email=${encodeURIComponent(user.email)}`;
 
-    await sendEmailUserCase.execute({
-      html: this.emailRepository.mapAccountConfirmationTemplate({
-        name: user.name,
-        confirmationUrl,
-        appName: process.env.APP_NAME || 'JobApply',
-      }),
-      subject: 'Your Account must be activated!',
-      to: user.email,
+    await this.workerRepository.addJob('email', {}, async () => {
+      await sendEmailUserCase.execute({
+        html: this.emailRepository.mapAccountConfirmationTemplate({
+          name: user.name,
+          confirmationUrl,
+          appName: process.env.APP_NAME || 'JobApply',
+        }),
+        subject: 'Your Account must be activated!',
+        to: user.email,
+      });
     });
 
     return user;
@@ -49,5 +54,11 @@ export class AuthService {
     );
 
     return useCase.execute(data);
+  }
+
+  async activate(email: string) {
+    const useCase = new ActiveUserUseCase(this.authRepository);
+
+    return useCase.execute(email);
   }
 }
