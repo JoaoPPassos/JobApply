@@ -4,11 +4,13 @@ import { LoginUserUseCase } from '@domain/use-cases/auth/login-user.use-case';
 import { AuthRepository } from '@infrastructure/repositories/auth.repository';
 import { HashRepository } from '@infrastructure/repositories/hash.repository';
 import { AuthLogin } from '@module/auth/types/AuthLogin.type';
-import { User } from '@domain/entities/User.entitie';
+import { User } from '@domain/entities/User.entity';
 import { SendMailUseCase } from '@domain/use-cases/mail/send-email.use-case';
 import { MailRepository } from '@infrastructure/repositories/mail.repository';
 import { WorkerRepository } from '@infrastructure/repositories/worker.repository';
 import { ActiveUserUseCase } from '@domain/use-cases/auth/active-user.use-case';
+import { RefreshTokenUseCase } from '@domain/use-cases/auth/refresh-token.use-case';
+import { AuthTokens } from '@module/auth/types/AuthLogin.type';
 
 @Injectable()
 export class AuthService {
@@ -54,6 +56,12 @@ export class AuthService {
     );
 
     return useCase.execute(data);
+  }
+
+  async refreshToken(refreshToken: string): Promise<AuthTokens> {
+    const useCase = new RefreshTokenUseCase(this.authRepository);
+
+    return useCase.execute(refreshToken);
   }
 
   async activate(email: string) {

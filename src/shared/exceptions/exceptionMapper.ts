@@ -1,4 +1,4 @@
-import { BaseException } from '@domain/errors/baseException';
+import { BaseException } from './baseException';
 import {
   BadRequestException,
   ConflictException,

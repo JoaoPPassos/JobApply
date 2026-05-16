@@ -1,4 +1,4 @@
-import { User } from '@domain/entities/User.entitie';
+import { User } from '@domain/entities/User.entity';
 import { IAuth } from '@domain/ports/IAuth.interface';
 import { IHashService } from '@domain/ports/IHashService.interface';
 

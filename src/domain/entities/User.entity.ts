@@ -1,6 +1,7 @@
 import { BaseEntity } from '@shared/entitie/base.entity';
 import { Exclude } from 'class-transformer';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
+import { Application } from './Application.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -16,4 +17,7 @@ export class User extends BaseEntity {
 
   @Column({ type: 'boolean', default: false })
   is_active: boolean;
+
+  @OneToMany(() => Application, (application) => application.user)
+  applications: Application[];
 }

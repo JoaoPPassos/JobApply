@@ -1,6 +1,12 @@
-import type { User } from '@domain/entities/User.entitie';
+import type { User } from '@domain/entities/User.entity';
+
+export type AuthUser = Omit<User, 'password'>;
+
+export type AuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+};
 
 export type AuthLogin = {
-  user: User;
-  accessToken: string;
-};
+  user: AuthUser;
+} & AuthTokens;

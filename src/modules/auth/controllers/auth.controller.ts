@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Header, Post, Query } from '@nestjs/common';
 import { CreateUserDTO } from '../dto/create-user';
-import { User } from '@domain/entities/User.entitie';
+import { User } from '@domain/entities/User.entity';
 import { AuthService } from '../services/auth.service';
 import { AuthenticateUserDTO } from '../dto/authenticate-user';
 import { SuccessResponse } from '@shared/response/success.response';
-import { AuthLogin } from '@module/auth/types/AuthLogin.type';
+import { AuthLogin, AuthTokens } from '@module/auth/types/AuthLogin.type';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -39,6 +39,19 @@ export class AuthController {
       response,
       200,
       'User logged up successfully',
+    );
+  }
+
+  @Post('refresh')
+  async refresh(
+    @Body() body: { refreshToken: string },
+  ): Promise<SuccessResponse<AuthTokens>> {
+    const response = await this.authService.refreshToken(body.refreshToken);
+
+    return new SuccessResponse<AuthTokens>(
+      response,
+      200,
+      'Token refreshed successfully',
     );
   }
 
