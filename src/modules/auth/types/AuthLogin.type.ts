@@ -8,5 +8,5 @@ export type AuthTokens = {
 };
 
 export type AuthLogin = {
-  user: AuthUser;
+  user: Omit<AuthUser, 'applications'>;
 } & AuthTokens;

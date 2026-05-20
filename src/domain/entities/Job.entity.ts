@@ -19,6 +19,7 @@ export class Job extends BaseEntity {
 
   @Column({ type: 'varchar' })
   source_url: string;
+
   @Column({
     type: 'enum',
     enum: source_type,
@@ -28,6 +29,9 @@ export class Job extends BaseEntity {
   @Column({ type: 'varchar' })
   location: string;
 
-  @OneToOne((test) => Application, (application) => application.job)
+  @Column({ type: 'varchar', default: 'pending' })
+  metadata_status: string;
+
+  @OneToOne(() => Application, (application) => application.job)
   application: Application;
 }

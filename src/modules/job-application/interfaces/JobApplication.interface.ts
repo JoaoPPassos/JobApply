@@ -1,6 +1,3 @@
-export interface JobApplication {
-  id: string;
-  position: string;
-  company: string;
-  status: string;
-}
+import type { Application } from '@domain/entities/Application.entity';
+
+export type JobApplication = Application;

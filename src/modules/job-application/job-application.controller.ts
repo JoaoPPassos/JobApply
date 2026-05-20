@@ -17,33 +17,30 @@ export class JobApplicationController {
   constructor(private jobApplicationService: JobApplicationService) {}
 
   @Get()
-  findAll(): JobApplication[] {
+  async findAll(): Promise<JobApplication[]> {
     return this.jobApplicationService.findAll();
   }
 
   @Get(':id')
-  findById(@Param('id') id: string): JobApplication | null {
-    const jobApplication = this.jobApplicationService.findById(id);
-
-    // if(jobApplication == null) return
-    return jobApplication;
+  async findById(@Param('id') id: string): Promise<JobApplication> {
+    return this.jobApplicationService.findById(id);
   }
 
   @Post()
-  create(@Body() body: CreateJobApplicationDTO): CreateJobApplicationDTO {
+  async create(@Body() body: CreateJobApplicationDTO): Promise<JobApplication> {
     return this.jobApplicationService.create(body);
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() body: UpdateJobApplicationDTO,
-  ): JobApplication {
+  ): Promise<JobApplication> {
     return this.jobApplicationService.update(id, body);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string): JobApplication[] {
+  async delete(@Param('id') id: string): Promise<JobApplication[]> {
     return this.jobApplicationService.remove(id);
   }
 }

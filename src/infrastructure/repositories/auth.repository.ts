@@ -1,8 +1,8 @@
+import { Injectable } from '@nestjs/common';
 import {
-  BadRequestException as NestBadRequestException,
-  Injectable,
-  UnauthorizedException as NestUnauthorizedException,
-} from '@nestjs/common';
+  BadRequestException,
+  UnauthorizedException,
+} from '@shared/exceptions/exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
@@ -62,7 +62,7 @@ export class AuthRepository implements IAuth {
       >(token, { secret: this.getRefreshSecret() });
 
       if (!payload || typeof payload !== 'object') {
-        throw new NestUnauthorizedException('Invalid refresh token');
+        throw new UnauthorizedException('Invalid refresh token');
       }
 
       const value = payload;
@@ -73,7 +73,7 @@ export class AuthRepository implements IAuth {
         typeof value.name !== 'string' ||
         typeof value.is_active !== 'boolean'
       ) {
-        throw new NestUnauthorizedException('Invalid refresh token payload');
+        throw new UnauthorizedException('Invalid refresh token payload');
       }
 
       return {
@@ -83,7 +83,7 @@ export class AuthRepository implements IAuth {
         is_active: value.is_active,
       };
     } catch {
-      throw new NestUnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
@@ -110,7 +110,7 @@ export class AuthRepository implements IAuth {
   async activate(email: string): Promise<User> {
     const user = await this.userRepository.findOneByOrFail({ email });
 
-    if (user.is_active) throw new NestBadRequestException();
+    if (user.is_active) throw new BadRequestException();
     user.is_active = true;
 
     await this.userRepository.save(user);

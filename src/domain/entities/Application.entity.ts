@@ -1,5 +1,12 @@
 import { BaseEntity } from '@shared/entitie/base.entity';
-import { Column, Entity, ManyToOne, OneToMany, OneToOne } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+} from 'typeorm';
 import { User } from './User.entity';
 import { Job } from './Job.entity';
 import { application_status } from '@shared/enums/application.enum';
@@ -23,15 +30,17 @@ export class Application extends BaseEntity {
   @ManyToOne(() => User, (user) => user.applications)
   user: User;
 
-  @OneToOne((type) => Job, (job) => job.application)
+  @OneToOne(() => Job, (job) => job.application, { cascade: true })
+  @JoinColumn()
   job: Job;
 
   @OneToMany(
-    (type) => ApplicationStatusHistory,
+    () => ApplicationStatusHistory,
     (statusHistory) => statusHistory.application,
   )
   statusHistory: ApplicationStatusHistory[];
 
-  @OneToOne((type) => Contact, (contact) => contact.application)
+  @OneToOne(() => Contact, (contact) => contact.application, { cascade: true })
+  @JoinColumn()
   contact: Contact;
 }

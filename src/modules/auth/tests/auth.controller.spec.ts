@@ -6,7 +6,8 @@ import {
   BadRequestException,
   ConflictException,
   UnauthorizedException,
-} from '@nestjs/common';
+} from '@shared/exceptions/exceptions';
+import { SuccessResponse } from '@shared/response/success.response';
 
 const mockAuthService = {
   signUp: jest.fn(),
@@ -47,14 +48,17 @@ describe('AuthController', () => {
       const result = await controller.signUp(validPayload);
 
       expect(mockAuthService.signUp).toHaveBeenCalledWith(validPayload);
-      expect(result).toEqual(
+      expect(result).toBeInstanceOf(SuccessResponse);
+      expect(result.statusCode).toBe(201);
+      expect(result.message).toBe('User signed up successfully');
+      expect(result.data).toEqual(
         expect.objectContaining({
           id: expect.anything(),
           name: validPayload.name,
           email: validPayload.email,
         }),
       );
-      expect((result as any).password).toBeUndefined();
+      expect((result.data as any).password).toBeUndefined();
     });
 
     it('should throw ConflictException when email already exists', async () => {

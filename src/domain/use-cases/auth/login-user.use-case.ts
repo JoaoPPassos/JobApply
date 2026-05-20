@@ -1,7 +1,10 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AuthTokenPayload, IAuth } from '@domain/ports/IAuth.interface';
 import { IHashService } from '@domain/ports/IHashService.interface';
 import { AuthLogin } from '@module/auth/types/AuthLogin.type';
+import {
+  BadRequestException,
+  NotFoundException,
+} from '@shared/exceptions/exceptions';
 
 export class LoginUserUseCase {
   constructor(

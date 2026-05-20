@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@shared/exceptions/exceptions';
 import { IAuth } from '@domain/ports/IAuth.interface';
 import { AuthTokens } from '@module/auth/types/AuthLogin.type';
 

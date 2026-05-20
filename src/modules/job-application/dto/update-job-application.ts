@@ -1,5 +1,5 @@
 export interface UpdateJobApplicationDTO {
-  position?: string;
-  company?: string;
   status?: string;
+  current_status?: string;
+  notes?: string;
 }

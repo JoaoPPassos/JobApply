@@ -1,50 +1,86 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JobApplication } from './interfaces/JobApplication.interface';
-import { randomUUID } from 'node:crypto';
 import { CreateJobApplicationDTO } from './dto/create-job-application';
 import { UpdateJobApplicationDTO } from './dto/update-job-application';
+import { CreateJobApplicationUseCase } from '@domain/use-cases/job-application/create-job-application.use-case';
+import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
+import { JobRepository } from '@infrastructure/repositories/job.repository';
+import { JobProcessorService } from '@infrastructure/services/job-processor.service';
 
 @Injectable()
 export class JobApplicationService {
-  private applications: JobApplication[] = [];
+  constructor(
+    private readonly createJobApplicationUseCase: CreateJobApplicationUseCase,
+    private readonly applicationRepository: ApplicationRepository,
+    private readonly jobRepository: JobRepository,
+    private readonly jobProcessor: JobProcessorService,
+  ) {}
 
-  constructor() {}
-
-  findAll(): JobApplication[] {
-    return this.applications;
+  async findAll(): Promise<JobApplication[]> {
+    return await this.applicationRepository.findAll();
   }
 
-  findById(id: string): JobApplication {
-    const jobApplication = this.applications.find((data) => data.id === id);
+  async findById(id: string): Promise<JobApplication> {
+    return await this.applicationRepository.findById(id);
+  }
 
-    if (!jobApplication) {
-      throw new NotFoundException();
+  async create(data: CreateJobApplicationDTO): Promise<JobApplication> {
+    const application = await this.createJobApplicationUseCase.execute(data);
+
+    void this.enrichJobMetadata(
+      application.job.id,
+      data.job_source_url,
+      data.source_platform,
+    );
+
+    return application;
+  }
+
+  async update(
+    id: string,
+    data: UpdateJobApplicationDTO,
+  ): Promise<JobApplication> {
+    const updatePayload: Record<string, unknown> = {};
+
+    if (data.current_status !== undefined) {
+      updatePayload.current_status = data.current_status;
     }
 
-    return jobApplication;
+    if (data.status !== undefined) {
+      updatePayload.current_status = data.status;
+    }
+
+    if (data.notes !== undefined) {
+      updatePayload.notes = data.notes;
+    }
+
+    return await this.applicationRepository.update(id, updatePayload);
   }
 
-  create(data: CreateJobApplicationDTO): JobApplication {
-    const index = this.applications.push({ id: randomUUID(), ...data });
-
-    return this.applications[index - 1];
+  async remove(id: string): Promise<JobApplication[]> {
+    return await this.applicationRepository.remove(id);
   }
 
-  update(id: string, data: UpdateJobApplicationDTO): JobApplication {
-    const index = this.applications.findIndex((data) => data.id == id);
-    if (index == -1) throw new NotFoundException();
+  private async enrichJobMetadata(
+    jobId: string,
+    source_url: string,
+    source_platform: string,
+  ): Promise<void> {
+    try {
+      const metadata = await this.jobProcessor.process(
+        source_url,
+        source_platform,
+      );
 
-    const newObj = { ...this.applications[index], ...data };
-    this.applications[index] = newObj;
-    return newObj;
-  }
-
-  remove(id: string) {
-    const array = this.applications.filter((data) => data.id !== id);
-    if (array.length === this.applications.length)
-      throw new NotFoundException();
-
-    this.applications = array;
-    return array;
+      await this.jobRepository.update({
+        id: jobId,
+        ...metadata,
+        source_url,
+        source_platform,
+        metadata_status: 'complete',
+      });
+    } catch (error) {
+      console.error('Job metadata enrichment failed', error);
+    }
   }
 }
