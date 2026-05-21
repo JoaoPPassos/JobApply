@@ -7,7 +7,7 @@ export default {
   username: process.env.DATABASE_USER || 'postgres',
   password: process.env.DATABASE_PASSWORD || 'postgres',
   database: process.env.DATABASE_NAME || 'jobapply',
-  entities: [__dirname + '/../**/*.entitie{.ts,.js}'],
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../infrastructure/migrations/**/*{.ts,.js}'],
   migrationsTableName: 'migrations',
   synchronize: false,

@@ -1,8 +1,8 @@
 export enum application_status {
-  'applied',
-  'in_review',
-  'interview',
-  'offer',
-  'rejected',
-  'withdrawn',
+  applied = 'applied',
+  in_review = 'in_review',
+  interview = 'interview',
+  offer = 'offer',
+  rejected = 'rejected',
+  withdrawn = 'withdrawn',
 }

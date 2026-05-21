@@ -30,7 +30,7 @@ export class LoggerMiddleware implements NestMiddleware {
       );
     });
 
-    if (Object.keys(body as object).length) {
+    if (body != null && Object.keys(body as object).length) {
       this.logger.debug(`Body: ${JSON.stringify(body)}`);
     }
 

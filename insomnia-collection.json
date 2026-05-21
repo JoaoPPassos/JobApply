@@ -17,7 +17,8 @@
       "name": "Base Environment",
       "data": {
         "base_url": "http://localhost:3000",
-        "access_token": ""
+        "access_token": "",
+        "refresh_token": ""
       },
       "parentId": "wrk_jobapply"
     },
@@ -67,7 +68,8 @@
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"email\": \"joao@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
-      }
+      },
+      "afterResponseScript": "const json = await response.json();\nconst data = json.data;\nawait insomnia.environment.set('access_token', data.accessToken);\nawait insomnia.environment.set('refresh_token', data.refreshToken);\nconsole.log('Tokens saved to environment.');"
     },
     {
       "_id": "req_refresh",
@@ -81,8 +83,9 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"refreshToken\": \"<your-refresh-token>\"\n}"
-      }
+        "text": "{\n  \"refreshToken\": \"{{ _.refresh_token }}\"\n}"
+      },
+      "afterResponseScript": "const json = await response.json();\nconst data = json.data;\nawait insomnia.environment.set('access_token', data.accessToken);\nawait insomnia.environment.set('refresh_token', data.refreshToken);\nconsole.log('Tokens refreshed and saved to environment.');"
     },
     {
       "_id": "req_confirm",

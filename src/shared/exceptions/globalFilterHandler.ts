@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ExceptionMapper } from './exceptionMapper';
+import { BaseException } from './baseException';
 
 @Catch()
 export class GlobalExceptionFilterHandler implements ExceptionFilter {
@@ -16,9 +17,20 @@ export class GlobalExceptionFilterHandler implements ExceptionFilter {
     const response = ctx.getResponse();
     const request = ctx.getRequest<{ method: string; url: string }>();
 
-    const isHttp = exception instanceof HttpException;
-    const status = isHttp ? exception.getStatus() : 500;
-    const mapper = new ExceptionMapper().mapper(status);
+    let status: number;
+    let message: string | undefined;
+
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      message = this.extractHttpMessage(exception);
+    } else if (exception instanceof BaseException) {
+      status = exception.statusCode;
+      message = exception.message;
+    } else {
+      status = 500;
+    }
+
+    const mapper = new ExceptionMapper().mapper(status, message);
 
     if (status >= 500) {
       this.logger.error(
@@ -28,11 +40,27 @@ export class GlobalExceptionFilterHandler implements ExceptionFilter {
     } else {
       this.logger.warn(
         `[${request.method}] ${request.url} → ${status}: ${
-          isHttp ? JSON.stringify(exception.getResponse()) : String(exception)
+          exception instanceof HttpException
+            ? JSON.stringify(exception.getResponse())
+            : String(exception)
         }`,
       );
     }
 
     response.status(status).json(mapper);
+  }
+
+  private extractHttpMessage(exception: HttpException): string {
+    const res = exception.getResponse();
+
+    if (typeof res === 'string') return res;
+
+    if (typeof res === 'object' && res !== null) {
+      const { message } = res as Record<string, unknown>;
+      if (Array.isArray(message)) return message.join(', ');
+      if (typeof message === 'string') return message;
+    }
+
+    return exception.message;
   }
 }
