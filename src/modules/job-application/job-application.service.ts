@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { JobApplication } from './interfaces/JobApplication.interface';
 import { CreateJobApplicationDTO } from './dto/create-job-application';
 import { UpdateJobApplicationDTO } from './dto/update-job-application';
-import { CreateJobApplicationUseCase } from '@domain/use-cases/job-application/create-job-application.use-case';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
 import { JobRepository } from '@infrastructure/repositories/job.repository';
 import { JobProcessorService } from '@infrastructure/services/job-processor.service';
+import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
 
 @Injectable()
 export class JobApplicationService {
   constructor(
-    private readonly createJobApplicationUseCase: CreateJobApplicationUseCase,
+    private readonly createApplicationUseCase: CreateApplicationUseCase,
     private readonly applicationRepository: ApplicationRepository,
     private readonly jobRepository: JobRepository,
     private readonly jobProcessor: JobProcessorService,
@@ -25,7 +25,7 @@ export class JobApplicationService {
   }
 
   async create(data: CreateJobApplicationDTO): Promise<JobApplication> {
-    const application = await this.createJobApplicationUseCase.execute(data);
+    const application = await this.createApplicationUseCase.execute(data);
 
     void this.enrichJobMetadata(
       application.job.id,
@@ -57,8 +57,8 @@ export class JobApplicationService {
     return await this.applicationRepository.update(id, updatePayload);
   }
 
-  async remove(id: string): Promise<JobApplication[]> {
-    return await this.applicationRepository.remove(id);
+  async remove(id: string): Promise<void> {
+    await this.applicationRepository.remove(id);
   }
 
   private async enrichJobMetadata(

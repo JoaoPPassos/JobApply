@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Header, Post, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CreateUserDTO } from '../dto/create-user';
 import { User } from '@domain/entities/User.entity';
 import { AuthService } from '../services/auth.service';
@@ -8,6 +9,7 @@ import { AuthLogin, AuthTokens } from '@module/auth/types/AuthLogin.type';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   private readonly successTemplate: string;
@@ -18,6 +20,14 @@ export class AuthController {
       'utf8',
     );
   }
+
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or passwords mismatch',
+  })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
   @Post('signUp')
   async signUp(@Body() body: CreateUserDTO): Promise<SuccessResponse<User>> {
     const response = await this.authService.signUp(body);
@@ -29,6 +39,12 @@ export class AuthController {
     );
   }
 
+  @ApiOperation({ summary: 'Authenticate user and get JWT tokens' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful, returns access and refresh tokens',
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @Post('login')
   async login(
     @Body() body: AuthenticateUserDTO,
@@ -42,6 +58,9 @@ export class AuthController {
     );
   }
 
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiResponse({ status: 200, description: 'New tokens returned' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   @Post('refresh')
   async refresh(
     @Body() body: { refreshToken: string },
@@ -55,6 +74,12 @@ export class AuthController {
     );
   }
 
+  @ApiOperation({ summary: 'Confirm user account via email link' })
+  @ApiQuery({ name: 'email', description: 'Email address to confirm' })
+  @ApiResponse({
+    status: 200,
+    description: 'Account confirmed, returns HTML page',
+  })
   @Get('confirm')
   @Header('Content-Type', 'text/html; charset=utf-8')
   async confirm(@Query('email') email: string): Promise<string> {

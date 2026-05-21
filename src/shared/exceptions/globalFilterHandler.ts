@@ -14,10 +14,24 @@ export class GlobalExceptionFilterHandler implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
+    const request = ctx.getRequest<{ method: string; url: string }>();
 
-    const excep = exception instanceof HttpException;
-    const status = excep ? exception.getStatus() : 500;
+    const isHttp = exception instanceof HttpException;
+    const status = isHttp ? exception.getStatus() : 500;
     const mapper = new ExceptionMapper().mapper(status);
+
+    if (status >= 500) {
+      this.logger.error(
+        `[${request.method}] ${request.url} → ${status}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    } else {
+      this.logger.warn(
+        `[${request.method}] ${request.url} → ${status}: ${
+          isHttp ? JSON.stringify(exception.getResponse()) : String(exception)
+        }`,
+      );
+    }
 
     response.status(status).json(mapper);
   }

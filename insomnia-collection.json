@@ -1,0 +1,224 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-05-21T00:00:00.000Z",
+  "__export_source": "custom",
+  "resources": [
+    {
+      "_id": "wrk_jobapply",
+      "_type": "workspace",
+      "name": "JobApply API",
+      "description": "API for managing job applications, authentication and contacts",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000",
+        "access_token": ""
+      },
+      "parentId": "wrk_jobapply"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "name": "Auth",
+      "parentId": "wrk_jobapply"
+    },
+    {
+      "_id": "fld_applications",
+      "_type": "request_group",
+      "name": "Applications",
+      "parentId": "wrk_jobapply"
+    },
+    {
+      "_id": "fld_job_application",
+      "_type": "request_group",
+      "name": "Job Application (legacy)",
+      "parentId": "wrk_jobapply"
+    },
+    {
+      "_id": "req_signup",
+      "_type": "request",
+      "name": "Sign Up",
+      "parentId": "fld_auth",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/signUp",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"StrongPass123!\",\n  \"confirm_password\": \"StrongPass123!\"\n}"
+      }
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "name": "Login",
+      "parentId": "fld_auth",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"joao@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+      }
+    },
+    {
+      "_id": "req_refresh",
+      "_type": "request",
+      "name": "Refresh Token",
+      "parentId": "fld_auth",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/refresh",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"<your-refresh-token>\"\n}"
+      }
+    },
+    {
+      "_id": "req_confirm",
+      "_type": "request",
+      "name": "Confirm Account",
+      "parentId": "fld_auth",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/confirm?email=joao@example.com",
+      "headers": []
+    },
+    {
+      "_id": "req_app_list",
+      "_type": "request",
+      "name": "List Applications",
+      "parentId": "fld_applications",
+      "method": "GET",
+      "url": "{{ _.base_url }}/applications",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "parameters": [
+        { "name": "user_id", "value": "", "disabled": true },
+        { "name": "job_id", "value": "", "disabled": true },
+        { "name": "status", "value": "", "disabled": true }
+      ]
+    },
+    {
+      "_id": "req_app_get",
+      "_type": "request",
+      "name": "Get Application by ID",
+      "parentId": "fld_applications",
+      "method": "GET",
+      "url": "{{ _.base_url }}/applications/<id>",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+    {
+      "_id": "req_app_create",
+      "_type": "request",
+      "name": "Create Application",
+      "parentId": "fld_applications",
+      "method": "POST",
+      "url": "{{ _.base_url }}/applications",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"job_source_url\": \"https://linkedin.com/jobs/123\",\n  \"source_platform\": \"LinkedIn\",\n  \"user_id\": \"<user-uuid>\",\n  \"current_status\": \"applied\",\n  \"applied_at\": \"2024-01-15\",\n  \"notes\": \"Applied through LinkedIn\",\n  \"contact\": {\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane.doe@company.com\",\n    \"role\": \"Engineering Manager\"\n  }\n}"
+      }
+    },
+    {
+      "_id": "req_app_update",
+      "_type": "request",
+      "name": "Update Application",
+      "parentId": "fld_applications",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/applications/<id>",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"current_status\": \"interviewing\",\n  \"notes\": \"Got a callback from recruiter\"\n}"
+      }
+    },
+    {
+      "_id": "req_app_delete",
+      "_type": "request",
+      "name": "Delete Application",
+      "parentId": "fld_applications",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/applications/<id>",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ]
+    },
+    {
+      "_id": "req_ja_list",
+      "_type": "request",
+      "name": "List Job Applications",
+      "parentId": "fld_job_application",
+      "method": "GET",
+      "url": "{{ _.base_url }}/job-application",
+      "headers": []
+    },
+    {
+      "_id": "req_ja_get",
+      "_type": "request",
+      "name": "Get Job Application by ID",
+      "parentId": "fld_job_application",
+      "method": "GET",
+      "url": "{{ _.base_url }}/job-application/<id>",
+      "headers": []
+    },
+    {
+      "_id": "req_ja_create",
+      "_type": "request",
+      "name": "Create Job Application",
+      "parentId": "fld_job_application",
+      "method": "POST",
+      "url": "{{ _.base_url }}/job-application",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"job_source_url\": \"https://linkedin.com/jobs/456\",\n  \"source_platform\": \"LinkedIn\",\n  \"user_id\": \"<user-uuid>\",\n  \"current_status\": \"applied\",\n  \"applied_at\": \"2024-01-20\",\n  \"notes\": \"Applied from a referral.\",\n  \"contact\": {\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane.doe@acme.com\",\n    \"role\": \"Recruiter\"\n  }\n}"
+      }
+    },
+    {
+      "_id": "req_ja_update",
+      "_type": "request",
+      "name": "Update Job Application",
+      "parentId": "fld_job_application",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/job-application/<id>",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"screening\",\n  \"notes\": \"Screening call scheduled\"\n}"
+      }
+    },
+    {
+      "_id": "req_ja_delete",
+      "_type": "request",
+      "name": "Delete Job Application",
+      "parentId": "fld_job_application",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/job-application/<id>",
+      "headers": []
+    }
+  ]
+}

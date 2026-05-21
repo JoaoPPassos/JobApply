@@ -9,6 +9,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
 import { Application } from '@domain/entities/Application.entity';
 import { SuccessResponse } from '@shared/response/success.response';
@@ -16,11 +24,36 @@ import { ApplicationService } from '../services/application.service';
 import { CreateApplicationDTO } from '../dto/create-application.dto';
 import { UpdateApplicationDTO } from '../dto/update-application.dto';
 
+@ApiTags('applications')
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard)
 @Controller('applications')
 export class ApplicationController {
   constructor(private readonly applicationService: ApplicationService) {}
 
+  @ApiOperation({
+    summary: 'List all applications (filterable by user, job or status)',
+  })
+  @ApiQuery({
+    name: 'user_id',
+    required: false,
+    description: 'Filter by user ID',
+  })
+  @ApiQuery({
+    name: 'job_id',
+    required: false,
+    description: 'Filter by job ID',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by application status',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Applications retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get()
   async findAll(
     @Query('user_id') user_id?: string,
@@ -41,6 +74,14 @@ export class ApplicationController {
     );
   }
 
+  @ApiOperation({ summary: 'Get a single application by ID' })
+  @ApiParam({ name: 'id', description: 'Application UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Application retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
   @Get(':id')
   async findOne(
     @Param('id') id: string,
@@ -53,6 +94,10 @@ export class ApplicationController {
     );
   }
 
+  @ApiOperation({ summary: 'Create a new application' })
+  @ApiResponse({ status: 201, description: 'Application created successfully' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post()
   async create(
     @Body() createApplicationDTO: CreateApplicationDTO,
@@ -65,6 +110,11 @@ export class ApplicationController {
     );
   }
 
+  @ApiOperation({ summary: 'Update an application' })
+  @ApiParam({ name: 'id', description: 'Application UUID' })
+  @ApiResponse({ status: 200, description: 'Application updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -78,6 +128,11 @@ export class ApplicationController {
     );
   }
 
+  @ApiOperation({ summary: 'Delete an application' })
+  @ApiParam({ name: 'id', description: 'Application UUID' })
+  @ApiResponse({ status: 200, description: 'Application removed successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<SuccessResponse<null>> {
     await this.applicationService.remove(id);
