@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Application } from '@domain/entities/Application.entity';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
 import { JobRepository } from '@infrastructure/repositories/job.repository';
-import { JobProcessorService } from '@infrastructure/services/job-processor.service';
+import { JobProcessorService } from '@infrastructure/services/linkedinJobProcessor.service';
 import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
 import { CreateApplicationDTO } from '../dto/create-application.dto';
 import { UpdateApplicationDTO } from '../dto/update-application.dto';

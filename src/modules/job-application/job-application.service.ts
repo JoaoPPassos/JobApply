@@ -4,7 +4,7 @@ import { CreateJobApplicationDTO } from './dto/create-job-application';
 import { UpdateJobApplicationDTO } from './dto/update-job-application';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
 import { JobRepository } from '@infrastructure/repositories/job.repository';
-import { JobProcessorService } from '@infrastructure/services/job-processor.service';
+import { JobProcessorService } from '@infrastructure/services/linkedinJobProcessor.service';
 import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
 
 @Injectable()

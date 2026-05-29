@@ -3,7 +3,7 @@ import { JobApplicationService } from '../job-application.service';
 import { CreateJobApplicationUseCase } from '@domain/use-cases/job-application/create-job-application.use-case';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
 import { JobRepository } from '@infrastructure/repositories/job.repository';
-import { JobProcessorService } from '@infrastructure/services/job-processor.service';
+import { JobProcessorService } from '@infrastructure/services/linkedinJobProcessor.service';
 import type { JobApplication } from '../interfaces/JobApplication.interface';
 import type { CreateJobApplicationDTO } from '../dto/create-job-application';
 import type { UpdateJobApplicationDTO } from '../dto/update-job-application';

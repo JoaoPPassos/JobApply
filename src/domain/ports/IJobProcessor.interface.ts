@@ -1,10 +1,7 @@
 import type { Job } from '@domain/entities/Job.entity';
 
 export interface IJobProcessor {
-  process(
-    source_url: string,
-    source_platform: string,
-  ): Promise<JobProcessorResult>;
+  process(source_url: string): Promise<JobProcessorResult>;
 }
 
 export type JobProcessorResult = Pick<
