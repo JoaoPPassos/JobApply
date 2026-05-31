@@ -1,30 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Application } from '@domain/entities/Application.entity';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
-import { JobRepository } from '@infrastructure/repositories/job.repository';
-import { JobProcessorService } from '@infrastructure/services/linkedinJobProcessor.service';
 import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
+import { JobEnrichmentPublisher } from '@infrastructure/messaging/job-enrichment.publisher';
 import { CreateApplicationDTO } from '../dto/create-application.dto';
 import { UpdateApplicationDTO } from '../dto/update-application.dto';
 
 @Injectable()
 export class ApplicationService {
-  private readonly logger = new Logger(ApplicationService.name);
-
   constructor(
     private readonly createApplicationUseCase: CreateApplicationUseCase,
     private readonly applicationRepository: ApplicationRepository,
-    private readonly jobRepository: JobRepository,
-    private readonly jobProcessorService: JobProcessorService,
+    private readonly jobEnrichmentPublisher: JobEnrichmentPublisher,
   ) {}
 
   async create(data: CreateApplicationDTO): Promise<Application> {
     const application = await this.createApplicationUseCase.execute(data);
-    void this.enrichJobMetadata(
-      application.job.id,
-      data.job_source_url,
-      data.source_platform,
-    );
+    void this.jobEnrichmentPublisher.publishEnrichmentRequest({
+      jobId: application.job.id,
+      sourceUrl: data.job_source_url,
+      sourcePlatform: data.source_platform,
+    });
     return application;
   }
 
@@ -54,29 +50,5 @@ export class ApplicationService {
 
   async remove(id: string): Promise<void> {
     return this.applicationRepository.remove(id);
-  }
-
-  private async enrichJobMetadata(
-    jobId: string,
-    sourceUrl: string,
-    sourcePlatform: string,
-  ): Promise<void> {
-    try {
-      const metadata = await this.jobProcessorService.process(
-        sourceUrl,
-        sourcePlatform,
-      );
-      await this.jobRepository.update({
-        id: jobId,
-        ...metadata,
-        metadata_status: 'completed',
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to enrich job metadata for job ${jobId}`,
-        error,
-      );
-      await this.jobRepository.update({ id: jobId, metadata_status: 'failed' });
-    }
   }
 }

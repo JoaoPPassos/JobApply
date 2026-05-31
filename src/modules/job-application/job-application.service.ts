@@ -3,17 +3,15 @@ import { JobApplication } from './interfaces/JobApplication.interface';
 import { CreateJobApplicationDTO } from './dto/create-job-application';
 import { UpdateJobApplicationDTO } from './dto/update-job-application';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
-import { JobRepository } from '@infrastructure/repositories/job.repository';
-import { JobProcessorService } from '@infrastructure/services/linkedinJobProcessor.service';
 import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
+import { JobEnrichmentPublisher } from '@infrastructure/messaging/job-enrichment.publisher';
 
 @Injectable()
 export class JobApplicationService {
   constructor(
     private readonly createApplicationUseCase: CreateApplicationUseCase,
     private readonly applicationRepository: ApplicationRepository,
-    private readonly jobRepository: JobRepository,
-    private readonly jobProcessor: JobProcessorService,
+    private readonly jobEnrichmentPublisher: JobEnrichmentPublisher,
   ) {}
 
   async findAll(): Promise<JobApplication[]> {
@@ -27,11 +25,11 @@ export class JobApplicationService {
   async create(data: CreateJobApplicationDTO): Promise<JobApplication> {
     const application = await this.createApplicationUseCase.execute(data);
 
-    void this.enrichJobMetadata(
-      application.job.id,
-      data.job_source_url,
-      data.source_platform,
-    );
+    void this.jobEnrichmentPublisher.publishEnrichmentRequest({
+      jobId: application.job.id,
+      sourceUrl: data.job_source_url,
+      sourcePlatform: data.source_platform,
+    });
 
     return application;
   }
@@ -59,28 +57,5 @@ export class JobApplicationService {
 
   async remove(id: string): Promise<void> {
     await this.applicationRepository.remove(id);
-  }
-
-  private async enrichJobMetadata(
-    jobId: string,
-    source_url: string,
-    source_platform: string,
-  ): Promise<void> {
-    try {
-      const metadata = await this.jobProcessor.process(
-        source_url,
-        source_platform,
-      );
-
-      await this.jobRepository.update({
-        id: jobId,
-        ...metadata,
-        source_url,
-        source_platform,
-        metadata_status: 'complete',
-      });
-    } catch (error) {
-      console.error('Job metadata enrichment failed', error);
-    }
   }
 }

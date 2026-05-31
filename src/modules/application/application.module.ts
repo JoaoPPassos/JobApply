@@ -7,13 +7,16 @@ import { Contact } from '@domain/entities/Contact.entity';
 import { JobRepository } from '@infrastructure/repositories/job.repository';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
 import { ContactRepository } from '@infrastructure/repositories/contact.repository';
-import { JobProcessorService } from '@infrastructure/services/linkedinJobProcessor.service';
 import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
 import { ApplicationController } from './controllers/application.controller';
 import { ApplicationService } from './services/application.service';
+import { RabbitmqModule } from '@infrastructure/messaging/rabbitmq.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Job, Application, Contact])],
+  imports: [
+    TypeOrmModule.forFeature([Job, Application, Contact]),
+    RabbitmqModule,
+  ],
   controllers: [ApplicationController],
   providers: [
     ApplicationService,
@@ -21,7 +24,6 @@ import { ApplicationService } from './services/application.service';
     JobRepository,
     ApplicationRepository,
     ContactRepository,
-    JobProcessorService,
     JwtService,
   ],
   exports: [ApplicationService],
