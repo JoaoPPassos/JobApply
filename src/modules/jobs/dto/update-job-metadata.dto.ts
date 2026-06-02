@@ -13,8 +13,5 @@ export class UpdateJobMetadataDTO {
   description: string;
 
   @IsString()
-  salary_range: string;
-
-  @IsString()
   location: string;
 }
