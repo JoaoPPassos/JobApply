@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsOptional, IsString, IsNotEmpty } from 'class-validator';
 
 export class UpdateJobMetadataDTO {
   @IsString()
@@ -14,4 +14,8 @@ export class UpdateJobMetadataDTO {
 
   @IsString()
   location: string;
+
+  @IsOptional()
+  @IsString()
+  salary_range?: string;
 }
