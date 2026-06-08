@@ -5,4 +5,5 @@ export enum application_status {
   offer = 'offer',
   rejected = 'rejected',
   withdrawn = 'withdrawn',
+  no_response = 'no_response',
 }
