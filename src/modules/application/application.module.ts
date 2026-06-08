@@ -11,6 +11,7 @@ import { CreateApplicationUseCase } from '@domain/use-cases/application/create-a
 import { ApplicationController } from './controllers/application.controller';
 import { ApplicationService } from './services/application.service';
 import { RabbitmqModule } from '@infrastructure/messaging/rabbitmq.module';
+import { UserCacheService } from '@shared/cache/user-request.cache';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { RabbitmqModule } from '@infrastructure/messaging/rabbitmq.module';
     ApplicationRepository,
     ContactRepository,
     JwtService,
+    UserCacheService,
   ],
   exports: [ApplicationService],
 })

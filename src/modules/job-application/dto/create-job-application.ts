@@ -1,5 +1,7 @@
 export interface CreateJobApplicationDTO {
   job_source_url: string;
+  company: string;
+  role: string;
   source_platform: string;
   user_id: string;
   current_status: string;

@@ -18,6 +18,10 @@ export class User extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   is_active: boolean;
 
+  @Column({ type: 'varchar', nullable: true, default: null })
+  @Exclude()
+  email_password: string | null;
+
   @OneToMany(() => Application, (application) => application.user)
   applications: Application[];
 }

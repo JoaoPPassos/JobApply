@@ -6,7 +6,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -35,13 +34,19 @@ export class CreateApplicationDTO {
   @IsNotEmpty()
   job_source_url!: string;
 
+  @ApiProperty({ example: 'Stripe' })
+  @IsString()
+  @IsNotEmpty()
+  company!: string;
+
+  @ApiProperty({ example: 'Backend Engineer' })
+  @IsString()
+  @IsNotEmpty()
+  role!: string;
+
   @ApiProperty({ enum: source_type, example: source_type.linkedin })
   @IsEnum(source_type)
   source_platform!: source_type;
-
-  @ApiProperty({ example: 'uuid-of-user' })
-  @IsUUID()
-  user_id!: string;
 
   @ApiProperty({ enum: application_status, example: application_status.applied })
   @IsEnum(application_status)

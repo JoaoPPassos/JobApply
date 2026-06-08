@@ -3,14 +3,13 @@ import { CreateUserUseCase } from '@domain/use-cases/auth/create-user.use-case';
 import { LoginUserUseCase } from '@domain/use-cases/auth/login-user.use-case';
 import { AuthRepository } from '@infrastructure/repositories/auth.repository';
 import { HashRepository } from '@infrastructure/repositories/hash.repository';
-import { AuthLogin } from '@module/auth/types/AuthLogin.type';
+import { AuthLogin, AuthTokens } from '@module/auth/types/AuthLogin.type';
 import { User } from '@domain/entities/User.entity';
 import { SendMailUseCase } from '@domain/use-cases/mail/send-email.use-case';
 import { MailRepository } from '@infrastructure/repositories/mail.repository';
 import { WorkerRepository } from '@infrastructure/repositories/worker.repository';
 import { ActiveUserUseCase } from '@domain/use-cases/auth/active-user.use-case';
 import { RefreshTokenUseCase } from '@domain/use-cases/auth/refresh-token.use-case';
-import { AuthTokens } from '@module/auth/types/AuthLogin.type';
 
 @Injectable()
 export class AuthService {

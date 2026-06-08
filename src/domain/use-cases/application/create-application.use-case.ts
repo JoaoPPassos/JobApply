@@ -7,6 +7,8 @@ import { User } from '@domain/entities/User.entity';
 
 export type CreateApplicationInput = {
   job_source_url: string;
+  company: string;
+  role: string;
   source_platform: string;
   user_id: string;
   current_status: string;
@@ -29,8 +31,8 @@ export class CreateApplicationUseCase {
 
   async execute(data: CreateApplicationInput): Promise<Application> {
     const job = await this.jobRepository.save({
-      title: 'Pending extraction',
-      company: 'Pending extraction',
+      title: data.role,
+      company: data.company,
       description: 'Job details will be loaded from the source URL.',
       salary_range: 'TBD',
       source_url: data.job_source_url,

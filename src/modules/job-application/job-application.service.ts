@@ -5,6 +5,7 @@ import { UpdateJobApplicationDTO } from './dto/update-job-application';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
 import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
 import { JobEnrichmentPublisher } from '@infrastructure/messaging/job-enrichment.publisher';
+import { JobCreatedPublisher } from '@infrastructure/messaging/job-created.publisher';
 
 @Injectable()
 export class JobApplicationService {
@@ -12,6 +13,7 @@ export class JobApplicationService {
     private readonly createApplicationUseCase: CreateApplicationUseCase,
     private readonly applicationRepository: ApplicationRepository,
     private readonly jobEnrichmentPublisher: JobEnrichmentPublisher,
+    private readonly jobCreatedPublisher: JobCreatedPublisher,
   ) {}
 
   async findAll(): Promise<JobApplication[]> {
@@ -29,6 +31,13 @@ export class JobApplicationService {
       jobId: application.job.id,
       sourceUrl: data.job_source_url,
       sourcePlatform: data.source_platform,
+    });
+
+    void this.jobCreatedPublisher.publish({
+      userId: data.user_id,
+      jobId: application.job.id,
+      company: data.company,
+      role: data.role,
     });
 
     return application;

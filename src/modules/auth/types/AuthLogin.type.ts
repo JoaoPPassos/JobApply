@@ -1,6 +1,6 @@
 import type { User } from '@domain/entities/User.entity';
 
-export type AuthUser = Omit<User, 'password'>;
+export type AuthUser = Omit<User, 'password' | 'email_password'>;
 
 export type AuthTokens = {
   accessToken: string;

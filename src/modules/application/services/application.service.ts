@@ -3,6 +3,7 @@ import { Application } from '@domain/entities/Application.entity';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
 import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
 import { JobEnrichmentPublisher } from '@infrastructure/messaging/job-enrichment.publisher';
+import { JobCreatedPublisher } from '@infrastructure/messaging/job-created.publisher';
 import { CreateApplicationDTO } from '../dto/create-application.dto';
 import { UpdateApplicationDTO } from '../dto/update-application.dto';
 
@@ -12,14 +13,27 @@ export class ApplicationService {
     private readonly createApplicationUseCase: CreateApplicationUseCase,
     private readonly applicationRepository: ApplicationRepository,
     private readonly jobEnrichmentPublisher: JobEnrichmentPublisher,
+    private readonly jobCreatedPublisher: JobCreatedPublisher,
   ) {}
 
-  async create(data: CreateApplicationDTO): Promise<Application> {
-    const application = await this.createApplicationUseCase.execute(data);
+  async create(
+    data: CreateApplicationDTO,
+    userId: string,
+  ): Promise<Application> {
+    const application = await this.createApplicationUseCase.execute({
+      ...data,
+      user_id: userId,
+    });
     void this.jobEnrichmentPublisher.publishEnrichmentRequest({
       jobId: application.job.id,
       sourceUrl: data.job_source_url,
       sourcePlatform: data.source_platform,
+    });
+    void this.jobCreatedPublisher.publish({
+      userId,
+      jobId: application.job.id,
+      company: data.company,
+      role: data.role,
     });
     return application;
   }

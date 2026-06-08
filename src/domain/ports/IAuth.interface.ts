@@ -15,4 +15,5 @@ export interface IAuth {
   findByID(id: string): Promise<User>;
   findByEmail(email: string): Promise<User | null>;
   activate(email: string): Promise<User>;
+  updateEmailPassword(userId: string, encryptedPassword: string): Promise<User>;
 }

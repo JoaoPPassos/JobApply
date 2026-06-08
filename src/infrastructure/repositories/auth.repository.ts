@@ -117,4 +117,13 @@ export class AuthRepository implements IAuth {
 
     return user;
   }
+
+  async updateEmailPassword(
+    userId: string,
+    encryptedPassword: string,
+  ): Promise<User> {
+    const user = await this.userRepository.findOneByOrFail({ id: userId });
+    user.email_password = encryptedPassword;
+    return this.userRepository.save(user);
+  }
 }

@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -17,7 +18,10 @@ import {
   ApiQuery,
   ApiParam,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
+import { UserCacheService } from '@shared/cache/user-request.cache';
+import { AuthTokenPayload } from '@domain/ports/IAuth.interface';
 import { Application } from '@domain/entities/Application.entity';
 import { SuccessResponse } from '@shared/response/success.response';
 import { ApplicationService } from '../services/application.service';
@@ -29,7 +33,10 @@ import { UpdateApplicationDTO } from '../dto/update-application.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('applications')
 export class ApplicationController {
-  constructor(private readonly applicationService: ApplicationService) {}
+  constructor(
+    private readonly applicationService: ApplicationService,
+    private readonly userCacheService: UserCacheService,
+  ) {}
 
   @ApiOperation({
     summary: 'List all applications (filterable by user, job or status)',
@@ -100,9 +107,12 @@ export class ApplicationController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Post()
   async create(
+    @Req() req: Request & { user: AuthTokenPayload },
     @Body() createApplicationDTO: CreateApplicationDTO,
   ): Promise<SuccessResponse<Application>> {
-    const data = await this.applicationService.create(createApplicationDTO);
+    const userId = req.user.id;
+    this.userCacheService.set(userId);
+    const data = await this.applicationService.create(createApplicationDTO, userId);
     return new SuccessResponse<Application>(
       data,
       201,
