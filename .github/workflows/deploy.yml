@@ -1,0 +1,51 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Hostinger
+        uses: hostinger/deploy-on-vps@v2
+        with:
+          api-key: ${{ secrets.HOSTINGER_API_KEY }}
+          virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
+          project-name: jobapply
+          personal-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          docker-compose-path: docker-compose.yml
+          environment-variables: |
+            NODE_ENV=production
+            PORT=3000
+
+            DATABASE_HOST=${{ vars.DATABASE_HOST }}
+            DATABASE_PORT=${{ vars.DATABASE_PORT }}
+            DATABASE_USER=${{ vars.DATABASE_USER }}
+            DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+            DATABASE_NAME=${{ vars.DATABASE_NAME }}
+
+            HASH_TOKEN=${{ secrets.HASH_TOKEN }}
+            EXPIRES_ACCESS_TOKEN=${{ vars.EXPIRES_ACCESS_TOKEN }}
+            EXPIRES_REFRESH_TOKEN=${{ vars.EXPIRES_REFRESH_TOKEN }}
+
+            SMTP_HOST=${{ vars.SMTP_HOST }}
+            SMTP_PORT=${{ vars.SMTP_PORT }}
+            SMTP_SECURE=${{ vars.SMTP_SECURE }}
+            SMTP_USER=${{ secrets.SMTP_USER }}
+            SMTP_PASS=${{ secrets.SMTP_PASS }}
+
+            APP_NAME=${{ vars.APP_NAME }}
+            APP_URL=${{ vars.APP_URL }}
+
+            REDIS_HOST=${{ vars.REDIS_HOST }}
+            REDIS_PORT=${{ vars.REDIS_PORT }}
+
+            RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}
+
+            RAPIDAPI_KEY=${{ secrets.RAPIDAPI_KEY }}
+
+            EMAIL_ENCRYPTION_KEY=${{ secrets.EMAIL_ENCRYPTION_KEY }}
