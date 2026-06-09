@@ -1,8 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/joaoffxii/jobapply:latest
     container_name: jobapply-app
     restart: unless-stopped
     ports:
