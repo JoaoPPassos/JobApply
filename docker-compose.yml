@@ -1,6 +1,7 @@
 services:
   app:
     image: ghcr.io/joaoppassos/jobapply:latest
+    pull_policy: always
     container_name: jobapply-app
     restart: unless-stopped
     ports:

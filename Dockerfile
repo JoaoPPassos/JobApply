@@ -6,7 +6,7 @@ COPY package.json ./
 RUN npm install
 
 COPY . .
-RUN npm run build
+RUN npm run build && test -f dist/src/main.js || (echo "ERROR: dist/src/main.js not found after build" && exit 1)
 
 
 FROM node:22-alpine AS production
