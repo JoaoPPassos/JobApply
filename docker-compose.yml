@@ -25,9 +25,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: jobhub
-      POSTGRES_PASSWORD: JOBHUB_PASSWORD
-      POSTGRES_DB: JobHub
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
