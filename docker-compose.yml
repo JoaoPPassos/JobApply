@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/joaoffxii/jobapply:latest
+    image: ghcr.io/joaoppassos/jobapply:latest
     container_name: jobapply-app
     restart: unless-stopped
     ports:

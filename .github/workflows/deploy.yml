@@ -25,7 +25,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/joaoffxii/jobapply:latest
+          tags: ghcr.io/joaoppassos/jobapply:latest
 
       - name: Deploy to Hostinger
         uses: hostinger/deploy-on-vps@v2
