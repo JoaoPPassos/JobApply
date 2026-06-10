@@ -67,7 +67,7 @@ export class MailRepository implements IEmailSevice {
   mapAccountConfirmationTemplate(
     data: AccountConfirmationTemplateData,
   ): string {
-    const appName = data.appName || 'JobApply';
+    const appName = data.appName || 'JobHub';
 
     return this.accountConfirmationTemplate
       .replaceAll('{{APP_NAME}}', appName)

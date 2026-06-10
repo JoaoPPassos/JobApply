@@ -25,14 +25,14 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/joaoppassos/jobapply:latest
+          tags: ghcr.io/joaoppassos/jobhub:latest
 
       - name: Deploy to Hostinger
         uses: hostinger/deploy-on-vps@v2
         with:
           api-key: ${{ secrets.HOSTINGER_API_KEY }}
           virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
-          project-name: jobapply
+          project-name: jobhub
           personal-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           docker-compose-path: docker-compose.yml
           environment-variables: |

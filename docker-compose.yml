@@ -1,8 +1,8 @@
 services:
   app:
-    image: ghcr.io/joaoppassos/jobapply:latest
+    image: ghcr.io/joaoppassos/jobhub:latest
     pull_policy: always
-    container_name: jobapply-app
+    container_name: jobhub-app
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
@@ -19,7 +19,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: jobapply-postgres
+    container_name: jobhub-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -32,14 +32,14 @@ services:
 
   redis:
     image: redis:latest
-    container_name: jobapply-redis
+    container_name: jobhub-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: jobapply-rabbitmq
+    container_name: jobhub-rabbitmq
     restart: unless-stopped
     ports:
       - "5672:5672"

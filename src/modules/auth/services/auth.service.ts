@@ -38,7 +38,7 @@ export class AuthService {
         html: this.emailRepository.mapAccountConfirmationTemplate({
           name: user.name,
           confirmationUrl,
-          appName: process.env.APP_NAME || 'JobApply',
+          appName: process.env.APP_NAME || 'JobHub',
         }),
         subject: 'Your Account must be activated!',
         to: user.email,

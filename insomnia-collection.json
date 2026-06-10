@@ -5,9 +5,9 @@
   "__export_source": "custom",
   "resources": [
     {
-      "_id": "wrk_jobapply",
+      "_id": "wrk_jobhub",
       "_type": "workspace",
-      "name": "JobApply API",
+      "name": "JobHub API",
       "description": "API for managing job applications, authentication and contacts",
       "scope": "collection"
     },
@@ -20,25 +20,25 @@
         "access_token": "",
         "refresh_token": ""
       },
-      "parentId": "wrk_jobapply"
+      "parentId": "wrk_jobhub"
     },
     {
       "_id": "fld_auth",
       "_type": "request_group",
       "name": "Auth",
-      "parentId": "wrk_jobapply"
+      "parentId": "wrk_jobhub"
     },
     {
       "_id": "fld_applications",
       "_type": "request_group",
       "name": "Applications",
-      "parentId": "wrk_jobapply"
+      "parentId": "wrk_jobhub"
     },
     {
       "_id": "fld_job_application",
       "_type": "request_group",
       "name": "Job Application (legacy)",
-      "parentId": "wrk_jobapply"
+      "parentId": "wrk_jobhub"
     },
     {
       "_id": "req_signup",

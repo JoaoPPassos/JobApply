@@ -24,7 +24,7 @@ async function bootstrap() {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('JobApply API')
+    .setTitle('JobHub API')
     .setDescription(
       'API for managing job applications, authentication and contacts',
     )
