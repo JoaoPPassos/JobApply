@@ -10,7 +10,8 @@ export default {
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../infrastructure/migrations/**/*{.ts,.js}'],
   migrationsTableName: 'migrations',
-  synchronize: false,
+  synchronize: process.env.NODE_ENV === 'test',
+  dropSchema: process.env.NODE_ENV === 'test',
   logging: false,
   cli: {
     migrationsDir: 'src/migrations',

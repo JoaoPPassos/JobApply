@@ -9,10 +9,12 @@
     "^@seed/(.*)$": "<rootDir>/src/seed/$1",
     "^@shared/(.*)$": "<rootDir>/src/shared/$1"
   },
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "setupFiles": ["<rootDir>/test/setup-env.ts"],
+  "testTimeout": 60000
 }
