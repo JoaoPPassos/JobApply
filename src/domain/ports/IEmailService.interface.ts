@@ -1,16 +1,9 @@
-export interface IEmailSevice {
-  sendMail: (data: SendEmail) => Promise<string>;
+export interface IEmailTemplateService {
   mapAccountConfirmationTemplate: (
     data: AccountConfirmationTemplateData,
   ) => string;
   mapPasswordResetTemplate: (data: PasswordResetTemplateData) => string;
 }
-
-export type SendEmail = {
-  html: string;
-  to: string;
-  subject: string;
-};
 
 export type AccountConfirmationTemplateData = {
   name: string;

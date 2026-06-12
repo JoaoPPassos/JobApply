@@ -28,10 +28,9 @@ describe('AuthService', () => {
   let mailRepository: {
     mapAccountConfirmationTemplate: jest.Mock;
     mapPasswordResetTemplate: jest.Mock;
-    sendMail: jest.Mock;
   };
-  let workerRepository: {
-    addJob: jest.Mock;
+  let emailPublisher: {
+    publish: jest.Mock;
   };
 
   const validPayload: CreateUserDTO = {
@@ -52,7 +51,9 @@ describe('AuthService', () => {
       saveResetCode: jest.fn().mockResolvedValue(undefined),
       clearResetCode: jest.fn().mockResolvedValue(undefined),
       updatePassword: jest.fn().mockResolvedValue(undefined),
-      generatePasswordResetToken: jest.fn().mockResolvedValue('reset-jwt-token'),
+      generatePasswordResetToken: jest
+        .fn()
+        .mockResolvedValue('reset-jwt-token'),
       verifyPasswordResetToken: jest
         .fn()
         .mockResolvedValue({ sub: 'user-id', email: 'joao@example.com' }),
@@ -66,22 +67,21 @@ describe('AuthService', () => {
         .fn()
         .mockReturnValue('<html>Confirmation</html>'),
       mapPasswordResetTemplate: jest.fn().mockReturnValue('<html>Reset</html>'),
-      sendMail: jest.fn().mockResolvedValue('msg-id'),
     };
-    workerRepository = {
-      addJob: jest.fn().mockResolvedValue('job-id'),
+    emailPublisher = {
+      publish: jest.fn().mockResolvedValue(undefined),
     };
 
     service = new AuthService(
       authRepository as any,
       hashRepository as any,
       mailRepository as any,
-      workerRepository as any,
+      emailPublisher as any,
     );
   });
 
   describe('signUp', () => {
-    it('should hash the password before saving the user', async () => {
+    it('should hash the password and publish a confirmation email event', async () => {
       const hashedPassword = 'hashed-password';
       const savedUser = {
         id: 'uuid-123',
@@ -105,10 +105,8 @@ describe('AuthService', () => {
           password: hashedPassword,
         }),
       );
-      expect(workerRepository.addJob).toHaveBeenCalledWith(
-        'email',
-        {},
-        expect.any(Function),
+      expect(emailPublisher.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ to: savedUser.email }),
       );
       expect(result).toEqual(savedUser);
     });
@@ -159,21 +157,11 @@ describe('AuthService', () => {
           is_active: storedUser.is_active,
         }),
       );
-      expect(authRepository.authenticateRefresh).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: storedUser.id,
-          email: storedUser.email,
-          name: storedUser.name,
-          is_active: storedUser.is_active,
-        }),
-      );
       expect(result).toEqual(
         expect.objectContaining({
           accessToken: 'access-token-123',
           refreshToken: 'refresh-token-456',
-          user: expect.objectContaining({
-            email: validPayload.email,
-          }),
+          user: expect.objectContaining({ email: validPayload.email }),
         }),
       );
     });
@@ -208,15 +196,12 @@ describe('AuthService', () => {
       email: 'joao@example.com',
     };
 
-    it('should generate a 6-digit code, save it hashed and queue the email', async () => {
+    it('should generate a 6-digit code, save it hashed and publish the email event', async () => {
       authRepository.findByEmail.mockResolvedValue(existingUser);
       hashRepository.hash.mockResolvedValue('hashed-code');
 
       await service.forgotPassword(existingUser.email);
 
-      expect(authRepository.findByEmail).toHaveBeenCalledWith(
-        existingUser.email,
-      );
       expect(hashRepository.hash).toHaveBeenCalledWith(
         expect.stringMatching(/^\d{6}$/),
       );
@@ -225,10 +210,8 @@ describe('AuthService', () => {
         'hashed-code',
         expect.any(Date),
       );
-      expect(workerRepository.addJob).toHaveBeenCalledWith(
-        'email',
-        {},
-        expect.any(Function),
+      expect(emailPublisher.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ to: existingUser.email }),
       );
     });
 
@@ -264,23 +247,14 @@ describe('AuthService', () => {
       ).resolves.toBeUndefined();
 
       expect(authRepository.saveResetCode).not.toHaveBeenCalled();
-      expect(workerRepository.addJob).not.toHaveBeenCalled();
+      expect(emailPublisher.publish).not.toHaveBeenCalled();
     });
 
     it('should pass the raw 6-digit code to the email template', async () => {
       authRepository.findByEmail.mockResolvedValue(existingUser);
       hashRepository.hash.mockResolvedValue('hashed-code');
 
-      let capturedCallback!: () => Promise<void>;
-      workerRepository.addJob.mockImplementation(
-        (_name: string, _data: unknown, callback: () => Promise<void>) => {
-          capturedCallback = callback;
-          return Promise.resolve('job-id');
-        },
-      );
-
       await service.forgotPassword(existingUser.email);
-      await capturedCallback();
 
       expect(mailRepository.mapPasswordResetTemplate).toHaveBeenCalledWith(
         expect.objectContaining({

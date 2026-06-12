@@ -3,6 +3,7 @@ import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { JobEnrichmentPublisher } from './job-enrichment.publisher';
 import { JobCreatedPublisher } from './job-created.publisher';
 import { UserCredentialsPublisher } from './user-credentials.publisher';
+import { EmailPublisher } from './email.publisher';
 
 @Module({
   imports: [
@@ -19,11 +20,13 @@ import { UserCredentialsPublisher } from './user-credentials.publisher';
     JobEnrichmentPublisher,
     JobCreatedPublisher,
     UserCredentialsPublisher,
+    EmailPublisher,
   ],
   providers: [
     JobEnrichmentPublisher,
     JobCreatedPublisher,
     UserCredentialsPublisher,
+    EmailPublisher,
   ],
 })
 export class RabbitmqModule {}

@@ -6,13 +6,12 @@ import { ValidateResetCodeUseCase } from '@domain/use-cases/auth/validate-reset-
 import { ResetPasswordUseCase } from '@domain/use-cases/auth/reset-password.use-case';
 import { AuthRepository } from '@infrastructure/repositories/auth.repository';
 import { HashRepository } from '@infrastructure/repositories/hash.repository';
-import { AuthLogin, AuthTokens } from '@module/auth/types/AuthLogin.type';
-import { User } from '@domain/entities/User.entity';
-import { SendMailUseCase } from '@domain/use-cases/mail/send-email.use-case';
 import { MailRepository } from '@infrastructure/repositories/mail.repository';
-import { WorkerRepository } from '@infrastructure/repositories/worker.repository';
+import { EmailPublisher } from '@infrastructure/messaging/email.publisher';
 import { ActiveUserUseCase } from '@domain/use-cases/auth/active-user.use-case';
 import { RefreshTokenUseCase } from '@domain/use-cases/auth/refresh-token.use-case';
+import { AuthLogin, AuthTokens } from '@module/auth/types/AuthLogin.type';
+import { User } from '@domain/entities/User.entity';
 
 @Injectable()
 export class AuthService {
@@ -20,7 +19,7 @@ export class AuthService {
     private authRepository: AuthRepository,
     private hashRepository: HashRepository,
     private emailRepository: MailRepository,
-    private workerRepository: WorkerRepository,
+    private emailPublisher: EmailPublisher,
   ) {}
 
   async signUp(data: {
@@ -32,20 +31,17 @@ export class AuthService {
       this.authRepository,
       this.hashRepository,
     );
-    const sendEmailUserCase = new SendMailUseCase(this.emailRepository);
     const user = await createUserUseCase.execute(data);
     const confirmationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/auth/confirm?email=${encodeURIComponent(user.email)}`;
 
-    await this.workerRepository.addJob('email', {}, async () => {
-      await sendEmailUserCase.execute({
-        html: this.emailRepository.mapAccountConfirmationTemplate({
-          name: user.name,
-          confirmationUrl,
-          appName: process.env.APP_NAME || 'JobHub',
-        }),
-        subject: 'Your Account must be activated!',
-        to: user.email,
-      });
+    await this.emailPublisher.publish({
+      to: user.email,
+      subject: 'Your Account must be activated!',
+      html: this.emailRepository.mapAccountConfirmationTemplate({
+        name: user.name,
+        confirmationUrl,
+        appName: process.env.APP_NAME || 'JobHub',
+      }),
     });
 
     return user;
@@ -83,18 +79,15 @@ export class AuthService {
     if (!result) return;
 
     const { user, code } = result;
-    const sendEmailUseCase = new SendMailUseCase(this.emailRepository);
 
-    await this.workerRepository.addJob('email', {}, async () => {
-      await sendEmailUseCase.execute({
-        to: user.email,
-        subject: `Recuperação de senha — ${process.env.APP_NAME || 'JobHub'}`,
-        html: this.emailRepository.mapPasswordResetTemplate({
-          name: user.name,
-          code,
-          appName: process.env.APP_NAME || 'JobHub',
-        }),
-      });
+    await this.emailPublisher.publish({
+      to: user.email,
+      subject: `Recuperação de senha — ${process.env.APP_NAME || 'JobHub'}`,
+      html: this.emailRepository.mapPasswordResetTemplate({
+        name: user.name,
+        code,
+        appName: process.env.APP_NAME || 'JobHub',
+      }),
     });
   }
 
