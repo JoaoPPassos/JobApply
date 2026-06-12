@@ -7,7 +7,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import { User } from '@domain/entities/User.entity';
-import { AuthTokenPayload, IAuth } from '@domain/ports/IAuth.interface';
+import {
+  AuthTokenPayload,
+  IAuth,
+  PasswordResetTokenPayload,
+} from '@domain/ports/IAuth.interface';
 import 'dotenv/config';
 
 @Injectable()
@@ -125,5 +129,59 @@ export class AuthRepository implements IAuth {
     const user = await this.userRepository.findOneByOrFail({ id: userId });
     user.email_password = encryptedPassword;
     return this.userRepository.save(user);
+  }
+
+  async saveResetCode(
+    userId: string,
+    hashedCode: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await this.userRepository.update(userId, {
+      reset_password_code: hashedCode,
+      reset_password_expires_at: expiresAt,
+    });
+  }
+
+  async clearResetCode(userId: string): Promise<void> {
+    await this.userRepository.update(userId, {
+      reset_password_code: null,
+      reset_password_expires_at: null,
+    });
+  }
+
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.userRepository.update(userId, { password: hashedPassword });
+  }
+
+  async generatePasswordResetToken(
+    userId: string,
+    email: string,
+  ): Promise<string> {
+    return this.jwtService.signAsync(
+      { sub: userId, email, type: 'password_reset' },
+      { secret: process.env.HASH_TOKEN, expiresIn: '15m' },
+    );
+  }
+
+  async verifyPasswordResetToken(
+    token: string,
+  ): Promise<PasswordResetTokenPayload> {
+    try {
+      const payload = await this.jwtService.verifyAsync<
+        Record<string, unknown>
+      >(token, { secret: process.env.HASH_TOKEN });
+
+      if (
+        typeof payload.sub !== 'string' ||
+        typeof payload.email !== 'string' ||
+        payload.type !== 'password_reset'
+      ) {
+        throw new UnauthorizedException('Invalid reset token');
+      }
+
+      return { sub: payload.sub, email: payload.email };
+    } catch {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
   }
 }

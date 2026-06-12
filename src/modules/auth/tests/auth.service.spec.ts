@@ -1,6 +1,7 @@
 import {
-  NotFoundException,
   BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
 } from '@shared/exceptions/exceptions';
 import { AuthService } from '../services/auth.service';
 import { CreateUserDTO } from '../dto/create-user';
@@ -13,6 +14,12 @@ describe('AuthService', () => {
     findByEmail: jest.Mock;
     findByID: jest.Mock;
     save: jest.Mock;
+    activate: jest.Mock;
+    saveResetCode: jest.Mock;
+    clearResetCode: jest.Mock;
+    updatePassword: jest.Mock;
+    generatePasswordResetToken: jest.Mock;
+    verifyPasswordResetToken: jest.Mock;
   };
   let hashRepository: {
     compare: jest.Mock;
@@ -20,6 +27,8 @@ describe('AuthService', () => {
   };
   let mailRepository: {
     mapAccountConfirmationTemplate: jest.Mock;
+    mapPasswordResetTemplate: jest.Mock;
+    sendMail: jest.Mock;
   };
   let workerRepository: {
     addJob: jest.Mock;
@@ -39,6 +48,14 @@ describe('AuthService', () => {
       findByEmail: jest.fn(),
       findByID: jest.fn(),
       save: jest.fn(),
+      activate: jest.fn(),
+      saveResetCode: jest.fn().mockResolvedValue(undefined),
+      clearResetCode: jest.fn().mockResolvedValue(undefined),
+      updatePassword: jest.fn().mockResolvedValue(undefined),
+      generatePasswordResetToken: jest.fn().mockResolvedValue('reset-jwt-token'),
+      verifyPasswordResetToken: jest
+        .fn()
+        .mockResolvedValue({ sub: 'user-id', email: 'joao@example.com' }),
     };
     hashRepository = {
       compare: jest.fn(),
@@ -48,6 +65,8 @@ describe('AuthService', () => {
       mapAccountConfirmationTemplate: jest
         .fn()
         .mockReturnValue('<html>Confirmation</html>'),
+      mapPasswordResetTemplate: jest.fn().mockReturnValue('<html>Reset</html>'),
+      sendMail: jest.fn().mockResolvedValue('msg-id'),
     };
     workerRepository = {
       addJob: jest.fn().mockResolvedValue('job-id'),
@@ -179,6 +198,204 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'nobody@example.com', password: 'any' }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('forgotPassword', () => {
+    const existingUser = {
+      id: 'user-id',
+      name: 'Joao Silva',
+      email: 'joao@example.com',
+    };
+
+    it('should generate a 6-digit code, save it hashed and queue the email', async () => {
+      authRepository.findByEmail.mockResolvedValue(existingUser);
+      hashRepository.hash.mockResolvedValue('hashed-code');
+
+      await service.forgotPassword(existingUser.email);
+
+      expect(authRepository.findByEmail).toHaveBeenCalledWith(
+        existingUser.email,
+      );
+      expect(hashRepository.hash).toHaveBeenCalledWith(
+        expect.stringMatching(/^\d{6}$/),
+      );
+      expect(authRepository.saveResetCode).toHaveBeenCalledWith(
+        existingUser.id,
+        'hashed-code',
+        expect.any(Date),
+      );
+      expect(workerRepository.addJob).toHaveBeenCalledWith(
+        'email',
+        {},
+        expect.any(Function),
+      );
+    });
+
+    it('should set an expiry roughly 15 minutes from now', async () => {
+      authRepository.findByEmail.mockResolvedValue(existingUser);
+      hashRepository.hash.mockResolvedValue('hashed-code');
+
+      let capturedExpiry!: Date;
+      authRepository.saveResetCode.mockImplementation(
+        (_id: string, _code: string, expiresAt: Date) => {
+          capturedExpiry = expiresAt;
+          return Promise.resolve(undefined);
+        },
+      );
+
+      const before = Date.now();
+      await service.forgotPassword(existingUser.email);
+      const after = Date.now();
+
+      expect(capturedExpiry.getTime()).toBeGreaterThanOrEqual(
+        before + 14 * 60 * 1000,
+      );
+      expect(capturedExpiry.getTime()).toBeLessThanOrEqual(
+        after + 15 * 60 * 1000 + 100,
+      );
+    });
+
+    it('should return silently when email is not registered', async () => {
+      authRepository.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        service.forgotPassword('unknown@example.com'),
+      ).resolves.toBeUndefined();
+
+      expect(authRepository.saveResetCode).not.toHaveBeenCalled();
+      expect(workerRepository.addJob).not.toHaveBeenCalled();
+    });
+
+    it('should pass the raw 6-digit code to the email template', async () => {
+      authRepository.findByEmail.mockResolvedValue(existingUser);
+      hashRepository.hash.mockResolvedValue('hashed-code');
+
+      let capturedCallback!: () => Promise<void>;
+      workerRepository.addJob.mockImplementation(
+        (_name: string, _data: unknown, callback: () => Promise<void>) => {
+          capturedCallback = callback;
+          return Promise.resolve('job-id');
+        },
+      );
+
+      await service.forgotPassword(existingUser.email);
+      await capturedCallback();
+
+      expect(mailRepository.mapPasswordResetTemplate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: existingUser.name,
+          code: expect.stringMatching(/^\d{6}$/),
+        }),
+      );
+    });
+  });
+
+  describe('verifyResetCode', () => {
+    const user = {
+      id: 'user-id',
+      name: 'Joao Silva',
+      email: 'joao@example.com',
+      reset_password_code: 'hashed-code',
+      reset_password_expires_at: new Date(Date.now() + 10 * 60 * 1000),
+    };
+
+    it('should return a reset token when the code is valid', async () => {
+      authRepository.findByEmail.mockResolvedValue(user);
+      hashRepository.compare.mockResolvedValue(true);
+
+      const token = await service.verifyResetCode(user.email, '123456');
+
+      expect(hashRepository.compare).toHaveBeenCalledWith(
+        '123456',
+        user.reset_password_code,
+      );
+      expect(authRepository.generatePasswordResetToken).toHaveBeenCalledWith(
+        user.id,
+        user.email,
+      );
+      expect(token).toBe('reset-jwt-token');
+    });
+
+    it('should throw BadRequestException when the code is wrong', async () => {
+      authRepository.findByEmail.mockResolvedValue(user);
+      hashRepository.compare.mockResolvedValue(false);
+
+      await expect(
+        service.verifyResetCode(user.email, '000000'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(authRepository.generatePasswordResetToken).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when the code is expired', async () => {
+      const expiredUser = {
+        ...user,
+        reset_password_expires_at: new Date(Date.now() - 1000),
+      };
+      authRepository.findByEmail.mockResolvedValue(expiredUser);
+
+      await expect(
+        service.verifyResetCode(expiredUser.email, '123456'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(hashRepository.compare).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when no reset code exists in the database', async () => {
+      const userWithoutCode = {
+        ...user,
+        reset_password_code: null,
+        reset_password_expires_at: null,
+      };
+      authRepository.findByEmail.mockResolvedValue(userWithoutCode);
+
+      await expect(
+        service.verifyResetCode(userWithoutCode.email, '123456'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when user is not found', async () => {
+      authRepository.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        service.verifyResetCode('unknown@example.com', '123456'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should hash the new password, update it and clear the reset code', async () => {
+      authRepository.verifyPasswordResetToken.mockResolvedValue({
+        sub: 'user-id',
+        email: 'joao@example.com',
+      });
+      hashRepository.hash.mockResolvedValue('new-hashed-password');
+
+      await service.resetPassword('valid-reset-token', 'NewStrongPass123!');
+
+      expect(authRepository.verifyPasswordResetToken).toHaveBeenCalledWith(
+        'valid-reset-token',
+      );
+      expect(hashRepository.hash).toHaveBeenCalledWith('NewStrongPass123!');
+      expect(authRepository.updatePassword).toHaveBeenCalledWith(
+        'user-id',
+        'new-hashed-password',
+      );
+      expect(authRepository.clearResetCode).toHaveBeenCalledWith('user-id');
+    });
+
+    it('should throw UnauthorizedException when the reset token is invalid', async () => {
+      authRepository.verifyPasswordResetToken.mockRejectedValue(
+        new UnauthorizedException('Invalid or expired reset token'),
+      );
+
+      await expect(
+        service.resetPassword('bad-token', 'NewStrongPass123!'),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(authRepository.updatePassword).not.toHaveBeenCalled();
+      expect(authRepository.clearResetCode).not.toHaveBeenCalled();
     });
   });
 });

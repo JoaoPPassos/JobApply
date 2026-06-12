@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserUseCase } from '@domain/use-cases/auth/create-user.use-case';
 import { LoginUserUseCase } from '@domain/use-cases/auth/login-user.use-case';
+import { ForgotPasswordUseCase } from '@domain/use-cases/auth/forgot-password.use-case';
+import { ValidateResetCodeUseCase } from '@domain/use-cases/auth/validate-reset-code.use-case';
+import { ResetPasswordUseCase } from '@domain/use-cases/auth/reset-password.use-case';
 import { AuthRepository } from '@infrastructure/repositories/auth.repository';
 import { HashRepository } from '@infrastructure/repositories/hash.repository';
 import { AuthLogin, AuthTokens } from '@module/auth/types/AuthLogin.type';
@@ -67,5 +70,49 @@ export class AuthService {
     const useCase = new ActiveUserUseCase(this.authRepository);
 
     return useCase.execute(email);
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const useCase = new ForgotPasswordUseCase(
+      this.authRepository,
+      this.hashRepository,
+    );
+
+    const result = await useCase.execute(email);
+
+    if (!result) return;
+
+    const { user, code } = result;
+    const sendEmailUseCase = new SendMailUseCase(this.emailRepository);
+
+    await this.workerRepository.addJob('email', {}, async () => {
+      await sendEmailUseCase.execute({
+        to: user.email,
+        subject: `Recuperação de senha — ${process.env.APP_NAME || 'JobHub'}`,
+        html: this.emailRepository.mapPasswordResetTemplate({
+          name: user.name,
+          code,
+          appName: process.env.APP_NAME || 'JobHub',
+        }),
+      });
+    });
+  }
+
+  async verifyResetCode(email: string, code: string): Promise<string> {
+    const useCase = new ValidateResetCodeUseCase(
+      this.authRepository,
+      this.hashRepository,
+    );
+
+    return useCase.execute(email, code);
+  }
+
+  async resetPassword(resetToken: string, newPassword: string): Promise<void> {
+    const useCase = new ResetPasswordUseCase(
+      this.authRepository,
+      this.hashRepository,
+    );
+
+    return useCase.execute(resetToken, newPassword);
   }
 }

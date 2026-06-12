@@ -1,6 +1,7 @@
 import {
   AccountConfirmationTemplateData,
   IEmailSevice,
+  PasswordResetTemplateData,
   SendEmail,
 } from '@domain/ports/IEmailService.interface';
 import { Injectable } from '@nestjs/common';
@@ -12,9 +13,9 @@ import { createTransport, type Transporter } from 'nodemailer';
 export class MailRepository implements IEmailSevice {
   private transporter: Transporter;
   private readonly accountConfirmationTemplate: string;
+  private readonly passwordResetTemplate: string;
 
-  private resolveAccountConfirmationTemplatePath(): string {
-    const fileName = 'account-confirmation.html';
+  private resolveTemplatePath(fileName: string): string {
     const candidates = [
       join(__dirname, '../templates/email', fileName),
       join(process.cwd(), 'dist/src/infrastructure/templates/email', fileName),
@@ -46,7 +47,12 @@ export class MailRepository implements IEmailSevice {
     });
 
     this.accountConfirmationTemplate = readFileSync(
-      this.resolveAccountConfirmationTemplatePath(),
+      this.resolveTemplatePath('account-confirmation.html'),
+      'utf8',
+    );
+
+    this.passwordResetTemplate = readFileSync(
+      this.resolveTemplatePath('password-reset.html'),
       'utf8',
     );
   }
@@ -73,5 +79,14 @@ export class MailRepository implements IEmailSevice {
       .replaceAll('{{APP_NAME}}', appName)
       .replaceAll('{{USER_NAME}}', data.name)
       .replaceAll('{{CONFIRMATION_URL}}', data.confirmationUrl);
+  }
+
+  mapPasswordResetTemplate(data: PasswordResetTemplateData): string {
+    const appName = data.appName || 'JobHub';
+
+    return this.passwordResetTemplate
+      .replaceAll('{{APP_NAME}}', appName)
+      .replaceAll('{{USER_NAME}}', data.name)
+      .replaceAll('{{RESET_CODE}}', data.code);
   }
 }

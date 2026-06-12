@@ -12,6 +12,11 @@ import { SuccessResponse } from '@shared/response/success.response';
 const mockAuthService = {
   signUp: jest.fn(),
   login: jest.fn(),
+  activate: jest.fn(),
+  refreshToken: jest.fn(),
+  forgotPassword: jest.fn(),
+  verifyResetCode: jest.fn(),
+  resetPassword: jest.fn(),
 };
 
 describe('AuthController', () => {
@@ -58,7 +63,7 @@ describe('AuthController', () => {
           email: validPayload.email,
         }),
       );
-      expect((result.data as any).password).toBeUndefined();
+      expect(result.data).not.toHaveProperty('password');
     });
 
     it('should throw ConflictException when email already exists', async () => {
@@ -104,52 +109,105 @@ describe('AuthController', () => {
     });
   });
 
-  // describe('POST /auth/login', () => {
-  //   const validCredentials = {
-  //     email: 'joao@example.com',
-  //     password: 'StrongPass123!',
-  //   };
+  describe('POST /auth/forgot-password', () => {
+    it('should always return 200 even when email is not registered', async () => {
+      mockAuthService.forgotPassword.mockResolvedValue(undefined);
 
-  //   it('should return user and token on valid credentials', async () => {
-  //     const expectedResponse = {
-  //       token: 'jwt.token.here',
-  //       user: {
-  //         id: 'uuid-123',
-  //         name: 'Joao Silva',
-  //         email: validCredentials.email,
-  //         created_at: new Date(),
-  //         updated_at: new Date(),
-  //       },
-  //     };
-  //     mockAuthService.login.mockResolvedValue(expectedResponse);
+      const result = await controller.forgotPassword({
+        email: 'anyone@example.com',
+      });
 
-  //     const result = await controller.login(validCredentials);
+      expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(
+        'anyone@example.com',
+      );
+      expect(result).toBeInstanceOf(SuccessResponse);
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toBeNull();
+    });
 
-  //     expect(mockAuthService.login).toHaveBeenCalledWith(validCredentials);
-  //     expect(result).toEqual(
-  //       expect.objectContaining({
-  //         token: expect.any(String),
-  //         user: expect.objectContaining({
-  //           email: validCredentials.email,
-  //         }),
-  //       }),
-  //     );
-  //   });
+    it('should propagate unexpected service errors', async () => {
+      mockAuthService.forgotPassword.mockRejectedValue(new Error('unexpected'));
 
-  //   it('should throw UnauthorizedException for wrong password', async () => {
-  //     mockAuthService.login.mockRejectedValue(new UnauthorizedException());
+      await expect(
+        controller.forgotPassword({ email: 'anyone@example.com' }),
+      ).rejects.toThrow('unexpected');
+    });
+  });
 
-  //     await expect(
-  //       controller.login({ ...validCredentials, password: 'wrong' }),
-  //     ).rejects.toThrow(UnauthorizedException);
-  //   });
+  describe('POST /auth/verify-reset-code', () => {
+    it('should return a reset_token when the code is valid', async () => {
+      mockAuthService.verifyResetCode.mockResolvedValue('reset-jwt-token');
 
-  //   it('should throw UnauthorizedException for non-existing user', async () => {
-  //     mockAuthService.login.mockRejectedValue(new UnauthorizedException());
+      const result = await controller.verifyResetCode({
+        email: 'joao@example.com',
+        code: '123456',
+      });
 
-  //     await expect(
-  //       controller.login({ email: 'missing@example.com', password: 'any' }),
-  //     ).rejects.toThrow(UnauthorizedException);
-  //   });
-  // });
+      expect(mockAuthService.verifyResetCode).toHaveBeenCalledWith(
+        'joao@example.com',
+        '123456',
+      );
+      expect(result).toBeInstanceOf(SuccessResponse);
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toEqual({ reset_token: 'reset-jwt-token' });
+    });
+
+    it('should throw BadRequestException when the code is invalid', async () => {
+      mockAuthService.verifyResetCode.mockRejectedValue(
+        new BadRequestException('Invalid reset code'),
+      );
+
+      await expect(
+        controller.verifyResetCode({
+          email: 'joao@example.com',
+          code: '000000',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when the code has expired', async () => {
+      mockAuthService.verifyResetCode.mockRejectedValue(
+        new BadRequestException('Reset code has expired'),
+      );
+
+      await expect(
+        controller.verifyResetCode({
+          email: 'joao@example.com',
+          code: '123456',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('POST /auth/reset-password', () => {
+    const validBody = {
+      reset_token: 'valid-reset-jwt',
+      new_password: 'NewStrongPass123!',
+      confirm_new_password: 'NewStrongPass123!',
+    };
+
+    it('should return 200 and null data on successful reset', async () => {
+      mockAuthService.resetPassword.mockResolvedValue(undefined);
+
+      const result = await controller.resetPassword(validBody);
+
+      expect(mockAuthService.resetPassword).toHaveBeenCalledWith(
+        validBody.reset_token,
+        validBody.new_password,
+      );
+      expect(result).toBeInstanceOf(SuccessResponse);
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toBeNull();
+    });
+
+    it('should throw UnauthorizedException when the reset token is invalid', async () => {
+      mockAuthService.resetPassword.mockRejectedValue(
+        new UnauthorizedException('Invalid or expired reset token'),
+      );
+
+      await expect(controller.resetPassword(validBody)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
 });
