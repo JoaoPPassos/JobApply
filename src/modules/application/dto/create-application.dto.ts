@@ -62,8 +62,9 @@ export class CreateApplicationDTO {
   @IsString()
   notes?: string;
 
-  @ApiProperty({ type: ContactDTO })
+  @ApiPropertyOptional({ type: ContactDTO })
+  @IsOptional()
   @ValidateNested()
   @Type(() => ContactDTO)
-  contact!: ContactDTO;
+  contact?: ContactDTO;
 }

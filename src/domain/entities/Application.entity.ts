@@ -24,8 +24,8 @@ export class Application extends BaseEntity {
   @Column({ type: 'timestamp' })
   applied_at: Date;
 
-  @Column({ type: 'text' })
-  notes: string;
+  @Column({ type: 'text', nullable: true })
+  notes?: string;
 
   @ManyToOne(() => User, (user) => user.applications)
   user: User;
@@ -40,7 +40,10 @@ export class Application extends BaseEntity {
   )
   statusHistory: ApplicationStatusHistory[];
 
-  @OneToOne(() => Contact, (contact) => contact.application, { cascade: true })
+  @OneToOne(() => Contact, (contact) => contact.application, {
+    cascade: true,
+    nullable: true,
+  })
   @JoinColumn()
-  contact: Contact;
+  contact?: Contact;
 }
