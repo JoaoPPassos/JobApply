@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@shared/exceptions/exceptions';
 import { JobsService } from '../services/jobs.service';
 import { JobRepository } from '@infrastructure/repositories/job.repository';
+import { Application } from '@domain/entities/Application.entity';
 import { UpdateJobMetadataDTO } from '../dto/update-job-metadata.dto';
 
 const mockJob = {
@@ -38,6 +40,14 @@ describe('JobsService', () => {
           provide: JobRepository,
           useValue: {
             update: jest.fn(),
+            findById: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Application),
+          useValue: {
+            findOne: jest.fn().mockResolvedValue(null),
+            save: jest.fn(),
           },
         },
       ],

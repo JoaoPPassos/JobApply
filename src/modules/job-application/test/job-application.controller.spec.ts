@@ -63,14 +63,14 @@ describe('JobApplicationController', () => {
   it('should return all job applications', async () => {
     const result = await controller.findAll();
 
-    expect(result).toEqual([mockApplication]);
+    expect(result.data).toEqual([mockApplication]);
     expect(service.findAll).toHaveBeenCalled();
   });
 
   it('should return a single application by id', async () => {
     const result = await controller.findById('application-1');
 
-    expect(result).toEqual(mockApplication);
+    expect(result.data).toEqual(mockApplication);
     expect(service.findById).toHaveBeenCalledWith('application-1');
   });
 
@@ -91,7 +91,7 @@ describe('JobApplicationController', () => {
 
     const result = await controller.create(payload);
 
-    expect(result).toEqual(mockApplication);
+    expect(result.data).toEqual(mockApplication);
     expect(service.create).toHaveBeenCalledWith(payload);
   });
 
@@ -102,14 +102,15 @@ describe('JobApplicationController', () => {
 
     const result = await controller.update('application-1', updatePayload);
 
-    expect(result.current_status).toBe('screening');
+    expect(result.data.current_status).toBe('screening');
     expect(service.update).toHaveBeenCalledWith('application-1', updatePayload);
   });
 
   it('should delete a job application', async () => {
     const result = await controller.delete('application-1');
 
-    expect(result).toEqual([]);
+    expect(result.data).toBeNull();
+    expect(result.statusCode).toBe(200);
     expect(service.remove).toHaveBeenCalledWith('application-1');
   });
 });

@@ -1,9 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { JobApplicationService } from '../job-application.service';
-import { CreateJobApplicationUseCase } from '@domain/use-cases/job-application/create-job-application.use-case';
+import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
-import { JobRepository } from '@infrastructure/repositories/job.repository';
-import { JobProcessorService } from '@infrastructure/services/linkedinJobProcessor.service';
+import { JobEnrichmentPublisher } from '@infrastructure/messaging/job-enrichment.publisher';
+import { JobCreatedPublisher } from '@infrastructure/messaging/job-created.publisher';
 import type { JobApplication } from '../interfaces/JobApplication.interface';
 import type { CreateJobApplicationDTO } from '../dto/create-job-application';
 import type { UpdateJobApplicationDTO } from '../dto/update-job-application';
@@ -47,39 +47,29 @@ describe('JobApplicationService', () => {
       ...mockApplication,
       current_status: 'screening',
     }),
-    remove: jest.fn().mockResolvedValue([]),
+    remove: jest.fn().mockResolvedValue(undefined),
   };
 
-  const mockJobRepo = {
-    update: jest.fn().mockResolvedValue({
-      ...mockApplication.job,
-      metadata_status: 'complete',
-    }),
+  const mockJobEnrichmentPublisher = {
+    publishEnrichmentRequest: jest.fn().mockResolvedValue(undefined),
   };
 
-  const mockJobProcessor = {
-    process: jest.fn().mockResolvedValue({
-      title: 'Backend Engineer',
-      company: 'Acme Inc.',
-      description: 'A backend engineer position.',
-      salary_range: '80k-100k',
-      location: 'Remote',
-    }),
+  const mockJobCreatedPublisher = {
+    publish: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
     service = new JobApplicationService(
-      mockCreateUseCase as unknown as CreateJobApplicationUseCase,
+      mockCreateUseCase as unknown as CreateApplicationUseCase,
       mockApplicationRepo as unknown as ApplicationRepository,
-      mockJobRepo as unknown as JobRepository,
-      mockJobProcessor as unknown as JobProcessorService,
+      mockJobEnrichmentPublisher as unknown as JobEnrichmentPublisher,
+      mockJobCreatedPublisher as unknown as JobCreatedPublisher,
     );
   });
 
-  it('should create a new job application and schedule metadata enrichment', async () => {
+  it('should create a new job application and fire enrichment', async () => {
     const payload: CreateJobApplicationDTO = {
-      job_source_url:
-        'https://example.com/jobs/1?title=Backend+Engineer&company=Acme+Inc.',
+      job_source_url: 'https://example.com/jobs/1?title=Backend+Engineer&company=Acme+Inc.',
       source_platform: 'LinkedIn',
       user_id: 'user-1',
       current_status: 'applied',
@@ -96,23 +86,6 @@ describe('JobApplicationService', () => {
 
     expect(result).toEqual(mockApplication);
     expect(mockCreateUseCase.execute).toHaveBeenCalledWith(payload);
-
-    await Promise.resolve();
-    expect(mockJobProcessor.process).toHaveBeenCalledWith(
-      payload.job_source_url,
-      payload.source_platform,
-    );
-    expect(mockJobRepo.update).toHaveBeenCalledWith({
-      id: mockApplication.job.id,
-      title: 'Backend Engineer',
-      company: 'Acme Inc.',
-      description: 'A backend engineer position.',
-      salary_range: '80k-100k',
-      location: 'Remote',
-      source_url: payload.job_source_url,
-      source_platform: payload.source_platform,
-      metadata_status: 'complete',
-    });
   });
 
   it('should return all applications from the repository', async () => {
@@ -141,17 +114,13 @@ describe('JobApplicationService', () => {
   });
 
   it('should remove an existing application', async () => {
-    const result = await service.remove('application-1');
-
-    expect(result).toEqual([]);
+    await expect(service.remove('application-1')).resolves.toBeUndefined();
     expect(mockApplicationRepo.remove).toHaveBeenCalledWith('application-1');
   });
 
   it('should throw NotFoundException when repository cannot find application', async () => {
     mockApplicationRepo.findById.mockRejectedValueOnce(new NotFoundException());
 
-    await expect(service.findById('missing')).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(service.findById('missing')).rejects.toThrow(NotFoundException);
   });
 });

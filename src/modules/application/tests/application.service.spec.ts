@@ -3,8 +3,8 @@ import { NotFoundException } from '@shared/exceptions/exceptions';
 import { ApplicationService } from '../services/application.service';
 import { CreateApplicationUseCase } from '@domain/use-cases/application/create-application.use-case';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
-import { JobRepository } from '@infrastructure/repositories/job.repository';
-import { JobProcessorService } from '@infrastructure/services/linkedinJobProcessor.service';
+import { JobEnrichmentPublisher } from '@infrastructure/messaging/job-enrichment.publisher';
+import { JobCreatedPublisher } from '@infrastructure/messaging/job-created.publisher';
 import { CreateApplicationDTO } from '../dto/create-application.dto';
 import { UpdateApplicationDTO } from '../dto/update-application.dto';
 
@@ -50,10 +50,10 @@ const validCreateDTO: CreateApplicationDTO = {
 
 describe('ApplicationService', () => {
   let service: ApplicationService;
-  let createApplicationUseCase: jest.Mocked<CreateApplicationUseCase>;
-  let applicationRepository: jest.Mocked<ApplicationRepository>;
-  let jobRepository: jest.Mocked<JobRepository>;
-  let jobProcessorService: jest.Mocked<JobProcessorService>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let createApplicationUseCase: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let applicationRepository: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -78,15 +78,15 @@ describe('ApplicationService', () => {
           },
         },
         {
-          provide: JobRepository,
+          provide: JobEnrichmentPublisher,
           useValue: {
-            update: jest.fn(),
+            publishEnrichmentRequest: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
-          provide: JobProcessorService,
+          provide: JobCreatedPublisher,
           useValue: {
-            process: jest.fn(),
+            publish: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
@@ -95,50 +95,27 @@ describe('ApplicationService', () => {
     service = module.get<ApplicationService>(ApplicationService);
     createApplicationUseCase = module.get(CreateApplicationUseCase);
     applicationRepository = module.get(ApplicationRepository);
-    jobRepository = module.get(JobRepository);
-    jobProcessorService = module.get(JobProcessorService);
   });
 
   describe('create', () => {
-    it('should create an application and return it immediately', async () => {
+    it('should create an application and return it', async () => {
       createApplicationUseCase.execute.mockResolvedValue(mockApplication as any);
-      jobProcessorService.process.mockResolvedValue({
-        title: 'Backend Engineer',
-        company: 'Acme',
-        description: 'desc',
-        salary_range: '$100k',
-        location: 'Remote',
-      });
-      jobRepository.update.mockResolvedValue(undefined as any);
 
-      const result = await service.create(validCreateDTO);
+      const result = await service.create(validCreateDTO, mockUser.id);
 
       expect(result).toEqual(mockApplication);
-      expect(createApplicationUseCase.execute).toHaveBeenCalledWith(validCreateDTO);
+      expect(createApplicationUseCase.execute).toHaveBeenCalledWith({
+        ...validCreateDTO,
+        user_id: mockUser.id,
+      });
     });
 
-    it('should fire-and-forget enrichment without blocking response', async () => {
+    it('should return the application without waiting for enrichment', async () => {
       createApplicationUseCase.execute.mockResolvedValue(mockApplication as any);
-      jobProcessorService.process.mockResolvedValue({
-        title: 'Backend Engineer',
-        company: 'Acme',
-        description: 'desc',
-        salary_range: '$100k',
-        location: 'Remote',
-      });
-      jobRepository.update.mockResolvedValue(undefined as any);
 
-      const result = await service.create(validCreateDTO);
+      const result = await service.create(validCreateDTO, mockUser.id);
 
       expect(result.id).toBe(mockApplication.id);
-    });
-
-    it('should not throw if enrichment fails internally', async () => {
-      createApplicationUseCase.execute.mockResolvedValue(mockApplication as any);
-      jobProcessorService.process.mockRejectedValue(new Error('Scraper failed'));
-      jobRepository.update.mockResolvedValue(undefined as any);
-
-      await expect(service.create(validCreateDTO)).resolves.not.toThrow();
     });
   });
 

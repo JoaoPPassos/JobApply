@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@shared/exceptions/exceptions';
 import { SuccessResponse } from '@shared/response/success.response';
 import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
+import { UserCacheService } from '@shared/cache/user-request.cache';
 import { ApplicationController } from '../controllers/application.controller';
 import { ApplicationService } from '../services/application.service';
 import { CreateApplicationDTO } from '../dto/create-application.dto';
@@ -68,6 +69,10 @@ describe('ApplicationController', () => {
             remove: jest.fn(),
           },
         },
+        {
+          provide: UserCacheService,
+          useValue: { set: jest.fn(), get: jest.fn(), has: jest.fn() },
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -81,13 +86,14 @@ describe('ApplicationController', () => {
   describe('POST /applications', () => {
     it('should create an application and return a SuccessResponse', async () => {
       service.create.mockResolvedValue(mockApplication as any);
+      const mockReq = { user: { id: mockUser.id } } as any;
 
-      const result = await controller.create(validCreateDTO);
+      const result = await controller.create(mockReq, validCreateDTO);
 
       expect(result).toBeInstanceOf(SuccessResponse);
       expect(result.data).toEqual(mockApplication);
       expect(result.statusCode).toBe(201);
-      expect(service.create).toHaveBeenCalledWith(validCreateDTO);
+      expect(service.create).toHaveBeenCalledWith(validCreateDTO, mockUser.id);
     });
   });
 
