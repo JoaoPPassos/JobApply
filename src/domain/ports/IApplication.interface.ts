@@ -18,7 +18,7 @@ type baseOmit = 'created_at' | 'updated_at' | 'id' | 'deleted_at';
 export type saveApplication = Partial<Omit<Application, baseOmit>> & {
   user: { id: string };
   job: Job;
-  contact: Contact;
+  contact?: Contact;
 };
 
 export type updateApplication = {

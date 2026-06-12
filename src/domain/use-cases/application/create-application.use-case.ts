@@ -14,7 +14,7 @@ export type CreateApplicationInput = {
   current_status: string;
   applied_at: Date;
   notes?: string;
-  contact: {
+  contact?: {
     name: string;
     email: string;
     role: string;
@@ -41,7 +41,9 @@ export class CreateApplicationUseCase {
       metadata_status: 'pending',
     });
 
-    const contact = await this.contactRepository.save(data.contact);
+    const contact = data.contact
+      ? await this.contactRepository.save(data.contact)
+      : undefined;
 
     return this.applicationRepository.save({
       current_status: data.current_status,
@@ -49,7 +51,7 @@ export class CreateApplicationUseCase {
       notes: data.notes,
       user: { id: data.user_id } as User,
       job,
-      contact,
+      ...(contact ? { contact } : {}),
     });
   }
 }

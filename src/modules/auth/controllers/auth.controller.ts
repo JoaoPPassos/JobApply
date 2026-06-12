@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CreateUserDTO } from '../dto/create-user';
 import { User } from '@domain/entities/User.entity';
@@ -45,6 +45,7 @@ export class AuthController {
     description: 'Login successful, returns access and refresh tokens',
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(
     @Body() body: AuthenticateUserDTO,
@@ -61,6 +62,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
   @ApiResponse({ status: 200, description: 'New tokens returned' })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
+  @HttpCode(HttpStatus.OK)
   @Post('refresh')
   async refresh(
     @Body() body: { refreshToken: string },

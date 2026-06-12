@@ -5,6 +5,7 @@ import {
   HttpException,
   Logger,
 } from '@nestjs/common';
+import { QueryFailedError } from 'typeorm';
 import { ExceptionMapper } from './exceptionMapper';
 import { BaseException } from './baseException';
 
@@ -26,6 +27,12 @@ export class GlobalExceptionFilterHandler implements ExceptionFilter {
     } else if (exception instanceof BaseException) {
       status = exception.statusCode;
       message = exception.message;
+    } else if (
+      exception instanceof QueryFailedError &&
+      (exception as QueryFailedError & { code: string }).code === '23505'
+    ) {
+      status = 409;
+      message = 'Resource already exists';
     } else {
       status = 500;
     }
