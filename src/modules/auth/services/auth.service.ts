@@ -32,7 +32,10 @@ export class AuthService {
       this.hashRepository,
     );
     const user = await createUserUseCase.execute(data);
-    const confirmationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/auth/confirm?email=${encodeURIComponent(user.email)}`;
+    const confirmationToken =
+      await this.authRepository.generateEmailConfirmationToken(user.email);
+    const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+    const confirmationUrl = `${baseUrl}/auth/confirm?token=${confirmationToken}`;
 
     await this.emailPublisher.publish({
       to: user.email,
@@ -62,10 +65,10 @@ export class AuthService {
     return useCase.execute(refreshToken);
   }
 
-  async activate(email: string) {
+  async activate(token: string) {
     const useCase = new ActiveUserUseCase(this.authRepository);
 
-    return useCase.execute(email);
+    return useCase.execute(token);
   }
 
   async forgotPassword(email: string): Promise<void> {

@@ -4,6 +4,7 @@ import { AuthLogin } from '@module/auth/types/AuthLogin.type';
 import {
   BadRequestException,
   NotFoundException,
+  UnauthorizedException,
 } from '@shared/exceptions/exceptions';
 
 export class LoginUserUseCase {
@@ -22,6 +23,11 @@ export class LoginUserUseCase {
     const valid = await this.hashService.compare(data.password, user.password);
 
     if (!valid) throw new BadRequestException('Email ou password errados.');
+
+    if (!user.is_active)
+      throw new UnauthorizedException(
+        'Conta não confirmada. Verifique seu e-mail.',
+      );
 
     const tokenPayload: AuthTokenPayload = {
       id: user.id,

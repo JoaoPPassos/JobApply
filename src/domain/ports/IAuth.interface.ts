@@ -12,6 +12,10 @@ export type PasswordResetTokenPayload = {
   email: string;
 };
 
+export type EmailConfirmationTokenPayload = {
+  email: string;
+};
+
 export interface IAuth {
   authenticate(data: unknown): Promise<string>;
   authenticateRefresh(data: unknown): Promise<string>;
@@ -30,4 +34,8 @@ export interface IAuth {
   updatePassword(userId: string, hashedPassword: string): Promise<void>;
   generatePasswordResetToken(userId: string, email: string): Promise<string>;
   verifyPasswordResetToken(token: string): Promise<PasswordResetTokenPayload>;
+  generateEmailConfirmationToken(email: string): Promise<string>;
+  verifyEmailConfirmationToken(
+    token: string,
+  ): Promise<EmailConfirmationTokenPayload>;
 }

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@shared/exceptions/exceptions';
+
 import { AuthService } from '../services/auth.service';
 import { CreateUserDTO } from '../dto/create-user';
 
@@ -186,6 +187,24 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'nobody@example.com', password: 'any' }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw UnauthorizedException when account is not confirmed', async () => {
+      authRepository.findByEmail.mockResolvedValue({
+        id: 'uuid-123',
+        name: validPayload.name,
+        email: validPayload.email,
+        password: 'hashed-password',
+        is_active: false,
+      });
+      hashRepository.compare.mockResolvedValue(true);
+
+      await expect(
+        service.login({
+          email: validPayload.email,
+          password: validPayload.password,
+        }),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 

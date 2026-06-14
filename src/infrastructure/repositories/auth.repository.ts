@@ -9,6 +9,7 @@ import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import { User } from '@domain/entities/User.entity';
 import {
   AuthTokenPayload,
+  EmailConfirmationTokenPayload,
   IAuth,
   PasswordResetTokenPayload,
 } from '@domain/ports/IAuth.interface';
@@ -182,6 +183,34 @@ export class AuthRepository implements IAuth {
       return { sub: payload.sub, email: payload.email };
     } catch {
       throw new UnauthorizedException('Invalid or expired reset token');
+    }
+  }
+
+  async generateEmailConfirmationToken(email: string): Promise<string> {
+    return this.jwtService.signAsync(
+      { email, type: 'email_confirmation' },
+      { secret: process.env.HASH_TOKEN, expiresIn: '24h' },
+    );
+  }
+
+  async verifyEmailConfirmationToken(
+    token: string,
+  ): Promise<EmailConfirmationTokenPayload> {
+    try {
+      const payload = await this.jwtService.verifyAsync<
+        Record<string, unknown>
+      >(token, { secret: process.env.HASH_TOKEN });
+
+      if (
+        typeof payload.email !== 'string' ||
+        payload.type !== 'email_confirmation'
+      ) {
+        throw new UnauthorizedException('Invalid confirmation token');
+      }
+
+      return { email: payload.email };
+    } catch {
+      throw new UnauthorizedException('Invalid or expired confirmation token');
     }
   }
 }

@@ -2,11 +2,11 @@ import {
   Body,
   Controller,
   Get,
-  Header,
   HttpCode,
   HttpStatus,
   Post,
   Query,
+  Redirect,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CreateUserDTO } from '../dto/create-user';
@@ -18,20 +18,11 @@ import { ValidateResetCodeDTO } from '../dto/validate-reset-code.dto';
 import { ResetPasswordDTO } from '../dto/reset-password.dto';
 import { SuccessResponse } from '@shared/response/success.response';
 import { AuthLogin, AuthTokens } from '@module/auth/types/AuthLogin.type';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  private readonly successTemplate: string;
-
-  constructor(private authService: AuthService) {
-    this.successTemplate = readFileSync(
-      this.resolveSuccessTemplatePath(),
-      'utf8',
-    );
-  }
+  constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
@@ -89,17 +80,25 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Confirm user account via email link' })
-  @ApiQuery({ name: 'email', description: 'Email address to confirm' })
+  @ApiQuery({ name: 'token', description: 'Signed confirmation token' })
   @ApiResponse({
-    status: 200,
-    description: 'Account confirmed, returns HTML page',
+    status: 302,
+    description: 'Account confirmed, redirects to login',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired confirmation token',
   })
   @Get('confirm')
-  @Header('Content-Type', 'text/html; charset=utf-8')
-  async confirm(@Query('email') email: string): Promise<string> {
-    const user = await this.authService.activate(email);
+  @Redirect()
+  async confirm(@Query('token') token: string): Promise<{ url: string }> {
+    await this.authService.activate(token);
 
-    return this.renderSuccessPage(user.name);
+    const loginUrl =
+      process.env.LOGIN_URL ||
+      `${process.env.APP_URL || 'http://localhost:3000'}/login`;
+
+    return { url: loginUrl };
   }
 
   @ApiOperation({
@@ -124,7 +123,8 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Verify the 6-digit reset code — returns a short-lived reset token',
+    summary:
+      'Verify the 6-digit reset code — returns a short-lived reset token',
   })
   @ApiResponse({ status: 200, description: 'Code valid, reset token returned' })
   @ApiResponse({ status: 400, description: 'Invalid or expired code' })
@@ -149,7 +149,10 @@ export class AuthController {
     summary: 'Reset password using the token from verify-reset-code',
   })
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  @ApiResponse({ status: 400, description: 'Validation error or invalid token' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or invalid token',
+  })
   @ApiResponse({ status: 401, description: 'Invalid or expired reset token' })
   @HttpCode(HttpStatus.OK)
   @Post('reset-password')
@@ -159,41 +162,5 @@ export class AuthController {
     await this.authService.resetPassword(body.reset_token, body.new_password);
 
     return new SuccessResponse<null>(null, 200, 'Password reset successfully');
-  }
-
-  private renderSuccessPage(userName: string): string {
-    return this.successTemplate.replaceAll(
-      '{{USER_NAME}}',
-      this.escapeHtml(userName),
-    );
-  }
-
-  private resolveSuccessTemplatePath(): string {
-    const fileName = 'account-confirmation-success.html';
-    const candidates = [
-      join(__dirname, '../../../infrastructure/templates/auth', fileName),
-      join(process.cwd(), 'dist/src/infrastructure/templates/auth', fileName),
-      join(process.cwd(), 'dist/infrastructure/templates/auth', fileName),
-      join(process.cwd(), 'src/infrastructure/templates/auth', fileName),
-    ];
-
-    const templatePath = candidates.find((path) => existsSync(path));
-
-    if (!templatePath) {
-      throw new Error(
-        `Success page template not found. Checked: ${candidates.join(', ')}`,
-      );
-    }
-
-    return templatePath;
-  }
-
-  private escapeHtml(value: string): string {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
   }
 }
