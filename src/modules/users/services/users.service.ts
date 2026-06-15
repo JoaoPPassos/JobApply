@@ -17,6 +17,14 @@ export class UsersService {
     return this.userRepository.findByID(id);
   }
 
+  async updateEmailPassword(userId: string, password: string): Promise<void> {
+    const useCase = new SaveEmailCredentialsUseCase(
+      this.userRepository,
+      this.encryptionService,
+    );
+    await useCase.execute(userId, password);
+  }
+
   async saveEmailCredentials(
     userId: string,
     emailPassword: string,
