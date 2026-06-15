@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  BadRequestException,
-  UnauthorizedException,
-} from '@shared/exceptions/exceptions';
+import { UnauthorizedException } from '@shared/exceptions/exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
@@ -115,10 +112,10 @@ export class AuthRepository implements IAuth {
   async activate(email: string): Promise<User> {
     const user = await this.userRepository.findOneByOrFail({ email });
 
-    if (user.is_active) throw new BadRequestException();
-    user.is_active = true;
-
-    await this.userRepository.save(user);
+    if (!user.is_active) {
+      user.is_active = true;
+      await this.userRepository.save(user);
+    }
 
     return user;
   }
