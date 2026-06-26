@@ -11,17 +11,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
+  ApiHeader,
   ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
   ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { Request } from 'express';
-import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
-import { UserCacheService } from '@shared/cache/user-request.cache';
-import { AuthTokenPayload } from '@domain/ports/IAuth.interface';
+import { InternalUserGuard } from '@shared/guards/internal-user.guard';
 import { Application } from '@domain/entities/Application.entity';
 import { SuccessResponse } from '@shared/response/success.response';
 import { ApplicationService } from '../services/application.service';
@@ -29,14 +27,15 @@ import { CreateApplicationDTO } from '../dto/create-application.dto';
 import { UpdateApplicationDTO } from '../dto/update-application.dto';
 
 @ApiTags('applications')
-@ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@ApiHeader({
+  name: 'x-user-id',
+  description: 'Internal user identifier from gateway',
+  required: true,
+})
+@UseGuards(InternalUserGuard)
 @Controller('applications')
 export class ApplicationController {
-  constructor(
-    private readonly applicationService: ApplicationService,
-    private readonly userCacheService: UserCacheService,
-  ) {}
+  constructor(private readonly applicationService: ApplicationService) {}
 
   @ApiOperation({
     summary: 'List all applications (filterable by user, job or status)',
@@ -60,7 +59,7 @@ export class ApplicationController {
     status: 200,
     description: 'Applications retrieved successfully',
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: 'Missing x-user-id header' })
   @Get()
   async findAll(
     @Query('user_id') user_id?: string,
@@ -87,7 +86,7 @@ export class ApplicationController {
     status: 200,
     description: 'Application retrieved successfully',
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: 'Missing x-user-id header' })
   @ApiResponse({ status: 404, description: 'Application not found' })
   @Get(':id')
   async findOne(
@@ -104,15 +103,16 @@ export class ApplicationController {
   @ApiOperation({ summary: 'Create a new application' })
   @ApiResponse({ status: 201, description: 'Application created successfully' })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: 'Missing x-user-id header' })
   @Post()
   async create(
-    @Req() req: Request & { user: AuthTokenPayload },
+    @Req() req: Request & { userId: string },
     @Body() createApplicationDTO: CreateApplicationDTO,
   ): Promise<SuccessResponse<Application>> {
-    const userId = req.user.id;
-    this.userCacheService.set(userId);
-    const data = await this.applicationService.create(createApplicationDTO, userId);
+    const data = await this.applicationService.create(
+      createApplicationDTO,
+      req.userId,
+    );
     return new SuccessResponse<Application>(
       data,
       201,
@@ -123,7 +123,7 @@ export class ApplicationController {
   @ApiOperation({ summary: 'Update an application' })
   @ApiParam({ name: 'id', description: 'Application UUID' })
   @ApiResponse({ status: 200, description: 'Application updated successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: 'Missing x-user-id header' })
   @ApiResponse({ status: 404, description: 'Application not found' })
   @Patch(':id')
   async update(
@@ -141,7 +141,7 @@ export class ApplicationController {
   @ApiOperation({ summary: 'Delete an application' })
   @ApiParam({ name: 'id', description: 'Application UUID' })
   @ApiResponse({ status: 200, description: 'Application removed successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: 'Missing x-user-id header' })
   @ApiResponse({ status: 404, description: 'Application not found' })
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<SuccessResponse<null>> {

@@ -3,7 +3,6 @@ import { JobRepository } from '@infrastructure/repositories/job.repository';
 import { ContactRepository } from '@infrastructure/repositories/contact.repository';
 import { ApplicationRepository } from '@infrastructure/repositories/application.repository';
 import { Application } from '@domain/entities/Application.entity';
-import { User } from '@domain/entities/User.entity';
 
 export type CreateApplicationInput = {
   job_source_url: string;
@@ -46,10 +45,10 @@ export class CreateApplicationUseCase {
       : undefined;
 
     return this.applicationRepository.save({
+      user_id: data.user_id,
       current_status: data.current_status,
       applied_at: data.applied_at,
       notes: data.notes,
-      user: { id: data.user_id } as User,
       job,
       ...(contact ? { contact } : {}),
     });

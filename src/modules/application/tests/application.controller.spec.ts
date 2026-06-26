@@ -1,19 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@shared/exceptions/exceptions';
 import { SuccessResponse } from '@shared/response/success.response';
-import { JwtAuthGuard } from '@shared/guards/jwt-auth.guard';
-import { UserCacheService } from '@shared/cache/user-request.cache';
+import { InternalUserGuard } from '@shared/guards/internal-user.guard';
 import { ApplicationController } from '../controllers/application.controller';
 import { ApplicationService } from '../services/application.service';
 import { CreateApplicationDTO } from '../dto/create-application.dto';
 import { UpdateApplicationDTO } from '../dto/update-application.dto';
+import { source_type } from '@shared/enums/source.enum';
+import { application_status } from '@shared/enums/application.enum';
 
 const mockJob = {
   id: 'job-uuid-123',
   title: 'Pending extraction',
   company: 'Pending extraction',
   source_url: 'https://linkedin.com/jobs/123',
-  source_platform: 'LinkedIn',
+  source_platform: source_type.linkedin,
   metadata_status: 'pending',
 };
 
@@ -24,28 +25,33 @@ const mockContact = {
   role: 'Engineering Manager',
 };
 
-const mockUser = { id: 'user-uuid-789' };
+const mockUserId = 'user-uuid-789';
 
 const mockApplication = {
   id: 'app-uuid-001',
-  current_status: 'applied',
+  user_id: mockUserId,
+  current_status: application_status.applied,
   applied_at: new Date('2024-01-15'),
   notes: 'Applied through LinkedIn',
   job: mockJob,
   contact: mockContact,
-  user: mockUser,
   created_at: new Date(),
   updated_at: new Date(),
 };
 
 const validCreateDTO: CreateApplicationDTO = {
   job_source_url: 'https://linkedin.com/jobs/123',
-  source_platform: 'LinkedIn',
-  user_id: mockUser.id,
-  current_status: 'applied',
+  company: 'Acme',
+  role: 'Backend Engineer',
+  source_platform: source_type.linkedin,
+  current_status: application_status.applied,
   applied_at: new Date('2024-01-15'),
   notes: 'Applied through LinkedIn',
-  contact: { name: 'John Doe', email: 'john.doe@acme.com', role: 'Engineering Manager' },
+  contact: {
+    name: 'John Doe',
+    email: 'john.doe@acme.com',
+    role: 'Engineering Manager',
+  },
 };
 
 describe('ApplicationController', () => {
@@ -69,13 +75,9 @@ describe('ApplicationController', () => {
             remove: jest.fn(),
           },
         },
-        {
-          provide: UserCacheService,
-          useValue: { set: jest.fn(), get: jest.fn(), has: jest.fn() },
-        },
       ],
     })
-      .overrideGuard(JwtAuthGuard)
+      .overrideGuard(InternalUserGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -86,14 +88,14 @@ describe('ApplicationController', () => {
   describe('POST /applications', () => {
     it('should create an application and return a SuccessResponse', async () => {
       service.create.mockResolvedValue(mockApplication as any);
-      const mockReq = { user: { id: mockUser.id } } as any;
+      const mockReq = { userId: mockUserId } as any;
 
       const result = await controller.create(mockReq, validCreateDTO);
 
       expect(result).toBeInstanceOf(SuccessResponse);
       expect(result.data).toEqual(mockApplication);
       expect(result.statusCode).toBe(201);
-      expect(service.create).toHaveBeenCalledWith(validCreateDTO, mockUser.id);
+      expect(service.create).toHaveBeenCalledWith(validCreateDTO, mockUserId);
     });
   });
 
@@ -112,11 +114,11 @@ describe('ApplicationController', () => {
     it('should filter by user_id when provided', async () => {
       service.findByUserId.mockResolvedValue([mockApplication] as any);
 
-      const result = await controller.findAll(mockUser.id);
+      const result = await controller.findAll(mockUserId);
 
       expect(result).toBeInstanceOf(SuccessResponse);
       expect(result.data).toEqual([mockApplication]);
-      expect(service.findByUserId).toHaveBeenCalledWith(mockUser.id);
+      expect(service.findByUserId).toHaveBeenCalledWith(mockUserId);
     });
 
     it('should filter by job_id when provided', async () => {
@@ -132,11 +134,15 @@ describe('ApplicationController', () => {
     it('should filter by status when provided', async () => {
       service.findByStatus.mockResolvedValue([mockApplication] as any);
 
-      const result = await controller.findAll(undefined, undefined, 'applied');
+      const result = await controller.findAll(
+        undefined,
+        undefined,
+        application_status.applied,
+      );
 
       expect(result).toBeInstanceOf(SuccessResponse);
       expect(result.data).toEqual([mockApplication]);
-      expect(service.findByStatus).toHaveBeenCalledWith('applied');
+      expect(service.findByStatus).toHaveBeenCalledWith(application_status.applied);
     });
   });
 
@@ -155,20 +161,27 @@ describe('ApplicationController', () => {
     it('should propagate NotFoundException when not found', async () => {
       service.findById.mockRejectedValue(new NotFoundException('not found'));
 
-      await expect(controller.findOne('invalid-id')).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('PATCH /applications/:id', () => {
     it('should update and return a SuccessResponse with updated application', async () => {
-      const updateDTO: UpdateApplicationDTO = { current_status: 'interviewing' };
-      const updated = { ...mockApplication, current_status: 'interviewing' };
+      const updateDTO: UpdateApplicationDTO = {
+        current_status: application_status.in_review,
+      };
+      const updated = {
+        ...mockApplication,
+        current_status: application_status.in_review,
+      };
       service.update.mockResolvedValue(updated as any);
 
       const result = await controller.update(mockApplication.id, updateDTO);
 
       expect(result).toBeInstanceOf(SuccessResponse);
-      expect(result.data.current_status).toBe('interviewing');
+      expect(result.data.current_status).toBe(application_status.in_review);
       expect(result.statusCode).toBe(200);
       expect(service.update).toHaveBeenCalledWith(mockApplication.id, updateDTO);
     });

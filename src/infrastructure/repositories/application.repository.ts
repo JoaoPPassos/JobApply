@@ -22,14 +22,14 @@ export class ApplicationRepository implements IApplication {
 
   async findAll(): Promise<Application[]> {
     return await this.applicationRepository.find({
-      relations: ['job', 'contact', 'user'],
+      relations: ['job', 'contact'],
     });
   }
 
   async findById(id: string): Promise<Application> {
     const application = await this.applicationRepository.findOne({
       where: { id },
-      relations: ['job', 'contact', 'user'],
+      relations: ['job', 'contact'],
     });
 
     if (!application) {
@@ -41,22 +41,22 @@ export class ApplicationRepository implements IApplication {
 
   async findByUserId(userId: string): Promise<Application[]> {
     return await this.applicationRepository.find({
-      where: { user: { id: userId } },
-      relations: ['job', 'contact', 'user'],
+      where: { user_id: userId },
+      relations: ['job', 'contact'],
     });
   }
 
   async findByJobId(jobId: string): Promise<Application[]> {
     return await this.applicationRepository.find({
       where: { job: { id: jobId } },
-      relations: ['job', 'contact', 'user'],
+      relations: ['job', 'contact'],
     });
   }
 
   async findByStatus(status: string): Promise<Application[]> {
     return await this.applicationRepository.find({
       where: { current_status: status },
-      relations: ['job', 'contact', 'user'],
+      relations: ['job', 'contact'],
     });
   }
 

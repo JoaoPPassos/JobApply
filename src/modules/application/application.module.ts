@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtService } from '@nestjs/jwt';
 import { Job } from '@domain/entities/Job.entity';
 import { Application } from '@domain/entities/Application.entity';
 import { Contact } from '@domain/entities/Contact.entity';
@@ -11,7 +10,6 @@ import { CreateApplicationUseCase } from '@domain/use-cases/application/create-a
 import { ApplicationController } from './controllers/application.controller';
 import { ApplicationService } from './services/application.service';
 import { RabbitmqModule } from '@infrastructure/messaging/rabbitmq.module';
-import { UserCacheService } from '@shared/cache/user-request.cache';
 
 @Module({
   imports: [
@@ -25,8 +23,6 @@ import { UserCacheService } from '@shared/cache/user-request.cache';
     JobRepository,
     ApplicationRepository,
     ContactRepository,
-    JwtService,
-    UserCacheService,
   ],
   exports: [ApplicationService],
 })
